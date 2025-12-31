@@ -1,4 +1,5 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+// Use relative API routes in the frontend — route through Next.js `/api` proxy
+const API_BASE_URL = '/api';
 
 export interface LoginCredentials {
   email: string;
