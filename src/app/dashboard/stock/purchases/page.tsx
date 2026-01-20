@@ -4,12 +4,16 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { stockMovementsApi } from '@/lib/api/stock-movements';
 import { getAuthToken } from '@/lib/auth';
+import { PriceDisplay } from '@/components/ui/PriceDisplay';
+import { Currency, convertCurrency } from '@/lib/utils/currency';
+import { useCurrency } from '@/lib/context/CurrencyContext';
 import theme from '@/styles/theme';
 
 export default function PurchasesPage() {
   const router = useRouter();
   const [movements, setMovements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { currency } = useCurrency();
 
   useEffect(() => {
     loadPurchases();
@@ -33,7 +37,12 @@ export default function PurchasesPage() {
     }
   };
 
-  const totalAmount = movements.reduce((sum, m) => sum + (Number(m.quantity || 0) * Number(m.unitCost || 0)), 0);
+  const totalAmount = movements.reduce((sum, m) => {
+    const unitCost = Number(m.unitCost || 0);
+    const itemCurrency = m.unitCostCurrency || Currency.USD;
+    const convertedCost = convertCurrency(unitCost, itemCurrency, currency);
+    return sum + (Number(m.quantity || 0) * convertedCost);
+  }, 0);
   const totalQuantity = movements.reduce((sum, m) => sum + Number(m.quantity || 0), 0);
 
   if (loading) {
@@ -101,7 +110,7 @@ export default function PurchasesPage() {
               Total Amount Spent
             </div>
             <div className="text-3xl font-bold" style={{ color: theme.colors.accent.green }}>
-              ${totalAmount.toFixed(2)}
+              <PriceDisplay amount={totalAmount} currency={currency} />
             </div>
           </div>
 
@@ -190,10 +199,16 @@ export default function PurchasesPage() {
                         {Number(movement.quantity || 0).toFixed(2)} {movement.item?.unit}
                       </td>
                       <td className="p-4 text-right" style={{ color: theme.colors.text.primary }}>
-                        ${Number(movement.unitCost || 0).toFixed(2)}
+                        <PriceDisplay 
+                          amount={Number(movement.unitCost || 0)}
+                          currency={movement.unitCostCurrency || Currency.USD}
+                        />
                       </td>
                       <td className="p-4 text-right font-semibold" style={{ color: theme.colors.accent.green }}>
-                        ${(Number(movement.quantity || 0) * Number(movement.unitCost || 0)).toFixed(2)}
+                        <PriceDisplay 
+                          amount={Number(movement.quantity || 0) * Number(movement.unitCost || 0)}
+                          currency={movement.unitCostCurrency || Currency.USD}
+                        />
                       </td>
                       <td className="p-4" style={{ color: theme.colors.text.secondary }}>
                         {movement.notes || '-'}

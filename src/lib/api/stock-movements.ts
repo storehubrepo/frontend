@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Currency } from '../utils/currency';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -7,6 +8,7 @@ export interface StockMovement {
   type: 'purchase' | 'sale' | 'production' | 'adjustment' | 'waste';
   quantity: number;
   unitCost?: number;
+  unitCostCurrency?: Currency;
   totalCost?: number;
   date?: string;
   notes?: string;
@@ -20,6 +22,7 @@ export interface CreateStockMovementDto {
   itemId: string;
   quantity: number;
   unitCost?: number;
+  unitCostCurrency?: Currency;
   notes?: string;
 }
 

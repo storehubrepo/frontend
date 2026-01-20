@@ -6,7 +6,10 @@ import { stockMovementsApi, CreateStockMovementDto } from '@/lib/api/stock-movem
 import { itemsApi, Item } from '@/lib/api/items';
 import { getAuthToken } from '@/lib/auth';
 import { NumberInput } from '@/components/ui/NumberInput';
+import { PriceInput } from '@/components/ui/PriceInput';
+import { PriceDisplay } from '@/components/ui/PriceDisplay';
 import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
+import { Currency } from '@/lib/utils/currency';
 import Link from 'next/link';
 import theme from '@/styles/theme';
 
@@ -17,12 +20,14 @@ export default function StockPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [summary, setSummary] = useState<any>(null);
+  const [unitCostCurrency, setUnitCostCurrency] = useState<Currency>(Currency.USD);
   
   const [formData, setFormData] = useState<CreateStockMovementDto>({
     type: 'purchase',
     itemId: '',
     quantity: 0,
     unitCost: 0,
+    unitCostCurrency: Currency.USD,
     notes: '',
   });
 
@@ -67,8 +72,10 @@ export default function StockPage() {
         itemId: '',
         quantity: 0,
         unitCost: 0,
+        unitCostCurrency: Currency.USD,
         notes: '',
       });
+      setUnitCostCurrency(Currency.USD);
       loadData();
     } catch (error) {
       console.error('Failed to create movement:', error);
@@ -230,7 +237,12 @@ export default function StockPage() {
                       <td className="px-6 py-4 font-medium" style={{ color: '#000000' }}>{movement.item?.name || 'Unknown'}</td>
                       <td className="px-6 py-4" style={{ color: '#000000' }}>{formatNumberWithCommas(Number(movement.quantity))}</td>
                       <td className="px-6 py-4" style={{ color: '#000000' }}>
-                        {movement.unitCost ? `$${formatNumberWithCommas(Number(movement.unitCost))}` : '-'}
+                        {movement.unitCost ? (
+                          <PriceDisplay 
+                            amount={Number(movement.unitCost)} 
+                            currency={movement.unitCostCurrency || Currency.USD}
+                          />
+                        ) : '-'}
                       </td>
                       <td className="px-6 py-4 text-black">{movement.notes || '-'}</td>
                       <td className="px-6 py-4 text-black">
@@ -316,11 +328,14 @@ export default function StockPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#000000' }}>Unit Cost (Optional)</label>
-                <NumberInput
+                <PriceInput
                   value={formData.unitCost || 0}
                   onChange={(value) => setFormData({ ...formData, unitCost: value })}
-                  min={0}
-                  allowDecimals={true}
+                  currency={unitCostCurrency}
+                  onCurrencyChange={(currency) => {
+                    setUnitCostCurrency(currency);
+                    setFormData({ ...formData, unitCostCurrency: currency });
+                  }}
                   className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
                   style={{ color: '#000000' }}
                 />
