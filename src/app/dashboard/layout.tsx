@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { getAuthToken, logout } from '@/lib/auth';
 import Link from 'next/link';
 import theme from '@/styles/theme';
+import { CurrencyToggle } from '@/components/ui/CurrencyToggle';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -83,6 +84,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="mb-10 mt-0 lg:mt-0">
           <h1 className="text-2xl font-bold mb-1">StoreHub</h1>
           <p className="text-sm text-black">My Inventory</p>
+        </div>
+
+        <div className="mb-6">
+          <CurrencyToggle />
         </div>
 
         <nav className="space-y-2">
