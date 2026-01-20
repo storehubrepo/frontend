@@ -7,6 +7,8 @@ import { recipesApi } from '@/lib/api/items';
 import { getAuthToken } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
 import { NumberInput } from '@/components/ui/NumberInput';
+import { PriceInput } from '@/components/ui/PriceInput';
+import { Currency } from '@/lib/utils/currency';
 import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
 import theme from '@/styles/theme';
 
@@ -24,9 +26,13 @@ export default function NewItemPage() {
     category: '',
     unit: 'piece',
     purchasePrice: undefined,
+    purchasePriceCurrency: Currency.USD,
     sellingPrice: undefined,
+    sellingPriceCurrency: Currency.USD,
     laborCost: 0,
+    laborCostCurrency: Currency.USD,
     utilitiesCost: 0,
+    utilitiesCostCurrency: Currency.USD,
     stockQuantity: 0,
     recipeYield: undefined,
   });
@@ -403,36 +409,24 @@ export default function NewItemPage() {
             {/* Price Fields */}
             {formData.type === 'raw_material' ? (
               <div className="mb-6">
-                <NumberInput
-                  label="Purchase Price per Unit ($)"
+                <PriceInput
+                  label="Purchase Price per Unit"
                   value={formData.purchasePrice || 0}
                   onChange={(value) => setFormData({ ...formData, purchasePrice: value })}
-                  min={0}
-                  allowDecimals={true}
-                  className="w-full h-12 px-4 rounded-xl"
-                  style={{
-                    background: theme.colors.background.secondary,
-                    border: `2px solid ${theme.colors.border}`,
-                    color: theme.colors.text.primary,
-                  }}
+                  currency={formData.purchasePriceCurrency || Currency.USD}
+                  onCurrencyChange={(currency) => setFormData({ ...formData, purchasePriceCurrency: currency })}
                   placeholder="0.00"
                 />
               </div>
             ) : (
               <>
                 <div className="mb-6">
-                  <NumberInput
-                    label="Selling Price ($) *"
+                  <PriceInput
+                    label="Selling Price"
                     value={formData.sellingPrice || 0}
                     onChange={(value) => setFormData({ ...formData, sellingPrice: value })}
-                    min={0}
-                    allowDecimals={true}
-                    className="w-full h-12 px-4 rounded-xl"
-                    style={{
-                      background: theme.colors.background.secondary,
-                      border: `2px solid ${theme.colors.border}`,
-                      color: theme.colors.text.primary,
-                    }}
+                    currency={formData.sellingPriceCurrency || Currency.USD}
+                    onCurrencyChange={(currency) => setFormData({ ...formData, sellingPriceCurrency: currency })}
                     placeholder="0.00"
                     required
                   />
@@ -440,34 +434,22 @@ export default function NewItemPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                   <div>
-                    <NumberInput
-                      label="Labor Cost ($)"
-                      value={formData.laborCost}
+                    <PriceInput
+                      label="Labor Cost"
+                      value={formData.laborCost || 0}
                       onChange={(value) => setFormData({ ...formData, laborCost: value })}
-                      min={0}
-                      allowDecimals={true}
-                      className="w-full h-12 px-4 rounded-xl"
-                      style={{
-                        background: theme.colors.background.secondary,
-                        border: `2px solid ${theme.colors.border}`,
-                        color: theme.colors.text.primary,
-                      }}
+                      currency={formData.laborCostCurrency || Currency.USD}
+                      onCurrencyChange={(currency) => setFormData({ ...formData, laborCostCurrency: currency })}
                       placeholder="0.00"
                     />
                   </div>
                   <div>
-                    <NumberInput
-                      label="Utilities Cost ($)"
-                      value={formData.utilitiesCost}
+                    <PriceInput
+                      label="Utilities Cost"
+                      value={formData.utilitiesCost || 0}
                       onChange={(value) => setFormData({ ...formData, utilitiesCost: value })}
-                      min={0}
-                      allowDecimals={true}
-                      className="w-full h-12 px-4 rounded-xl"
-                      style={{
-                        background: theme.colors.background.secondary,
-                        border: `2px solid ${theme.colors.border}`,
-                        color: theme.colors.text.primary,
-                      }}
+                      currency={formData.utilitiesCostCurrency || Currency.USD}
+                      onCurrencyChange={(currency) => setFormData({ ...formData, utilitiesCostCurrency: currency })}
                       placeholder="0.00"
                     />
                   </div>

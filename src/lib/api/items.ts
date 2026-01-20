@@ -10,9 +10,13 @@ export interface Item {
   category?: string;
   unit: 'piece' | 'dozen' | 'box' | 'pack' | 'kg' | 'gram' | 'liter' | 'ml' | 'gallon' | 'cup' | 'tablespoon' | 'teaspoon' | 'ounce' | 'pound';
   purchasePrice?: number;
+  purchasePriceCurrency?: 'USD' | 'LBP';
   sellingPrice?: number;
+  sellingPriceCurrency?: 'USD' | 'LBP';
   laborCost: number;
+  laborCostCurrency: 'USD' | 'LBP';
   utilitiesCost: number;
+  utilitiesCostCurrency: 'USD' | 'LBP';
   stockQuantity: number;
   recipeYield?: number;
   recipes?: Recipe[];
@@ -37,9 +41,13 @@ export interface CreateItemDto {
   category?: string;
   unit: 'piece' | 'dozen' | 'box' | 'pack' | 'kg' | 'gram' | 'liter' | 'ml' | 'gallon' | 'cup' | 'tablespoon' | 'teaspoon' | 'ounce' | 'pound';
   purchasePrice?: number;
+  purchasePriceCurrency?: 'USD' | 'LBP';
   sellingPrice?: number;
+  sellingPriceCurrency?: 'USD' | 'LBP';
   laborCost?: number;
+  laborCostCurrency?: 'USD' | 'LBP';
   utilitiesCost?: number;
+  utilitiesCostCurrency?: 'USD' | 'LBP';
   stockQuantity?: number;
   recipeYield?: number;
 }
