@@ -65,14 +65,14 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen p-8" style={{ background: theme.colors.background.secondary }}>
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8" style={{ background: theme.colors.background.secondary }}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2" style={{ color: theme.colors.text.primary }}>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2" style={{ color: theme.colors.text.primary }}>
             My Dashboard
           </h1>
-          <p style={{ color: theme.colors.text.secondary }}>
+          <p className="text-sm sm:text-base" style={{ color: theme.colors.text.secondary }}>
             Overview of your inventory system
           </p>
         </div>

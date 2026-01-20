@@ -87,12 +87,12 @@ export default function AnalyticsPage() {
   if (!data) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2" style={{ color: theme.colors.text.primary }}>Analytics Dashboard</h1>
-          <p style={{ color: theme.colors.text.secondary }}>Comprehensive insights into your business performance</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2" style={{ color: theme.colors.text.primary }}>Analytics Dashboard</h1>
+          <p className="text-sm sm:text-base" style={{ color: theme.colors.text.secondary }}>Comprehensive insights into your business performance</p>
         </div>
 
         {/* Expense Filters */}
@@ -153,7 +153,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <div className="text-3xl">📊</div>

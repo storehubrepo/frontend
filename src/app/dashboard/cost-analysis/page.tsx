@@ -178,20 +178,20 @@ export default function CostAnalysisPage() {
   }
 
   return (
-    <div className="min-h-screen p-8" style={{ background: theme.colors.background.secondary }}>
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8" style={{ background: theme.colors.background.secondary }}>
       <div className="max-w-[1800px] mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2" style={{ color: '#000000' }}>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2" style={{ color: '#000000' }}>
             Cost Analysis & Breakdown
           </h1>
-          <p style={{ color: '#000000' }}>
+          <p className="text-sm sm:text-base" style={{ color: '#000000' }}>
             Detailed recipe-based cost calculations for all products
           </p>
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 sm:mb-8">
           {/* Time Filter */}
           <div>
             <label className="block text-sm font-semibold mb-2" style={{ color: '#000000' }}>

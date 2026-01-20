@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { stockMovementsApi, CreateStockMovementDto } from '@/lib/api/stock-movements';
 import { itemsApi, Item } from '@/lib/api/items';
 import { getAuthToken } from '@/lib/auth';
+import { NumberInput } from '@/components/ui/NumberInput';
+import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
 import Link from 'next/link';
 import theme from '@/styles/theme';
 
@@ -108,18 +110,18 @@ export default function StockPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-4xl font-bold mb-2" style={{ color: '#000000' }}>Stock Management</h1>
-            <p style={{ color: '#000000' }}>Track inventory movements and stock levels</p>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2" style={{ color: '#000000' }}>Stock Management</h1>
+            <p className="text-sm sm:text-base" style={{ color: '#000000' }}>Track inventory movements and stock levels</p>
           </div>
           <button
             onClick={() => setShowModal(true)}
             style={{ background: theme.colors.primary.black }}
-            className="px-6 py-3 text-white rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2 shadow-lg"
+            className="w-full sm:w-auto px-4 sm:px-6 py-3 text-white rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg text-sm sm:text-base"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -141,7 +143,7 @@ export default function StockPage() {
                 </div>
               </div>
               <h3 className="text-sm mb-1" style={{ color: '#000000' }}>Total Purchases</h3>
-              <p className="text-3xl font-bold" style={{ color: '#000000' }}>{summary.totalPurchases.toFixed(0)}</p>
+              <p className="text-3xl font-bold" style={{ color: '#000000' }}>{formatNumberWithCommas(summary.totalPurchases, 0)}</p>
             </Link>
 
             <Link href="/dashboard/stock/sales" className="bg-white rounded-2xl p-6 shadow-lg border-2 border-transparent hover:border-green-500 transition-all cursor-pointer">
@@ -154,7 +156,7 @@ export default function StockPage() {
                 </div>
               </div>
               <h3 className="text-sm mb-1" style={{ color: '#000000' }}>Total Sales</h3>
-              <p className="text-3xl font-bold" style={{ color: '#000000' }}>{summary.totalSales.toFixed(0)}</p>
+              <p className="text-3xl font-bold" style={{ color: '#000000' }}>{formatNumberWithCommas(summary.totalSales, 0)}</p>
             </Link>
 
             <Link href="/dashboard/stock/production" className="bg-white rounded-2xl p-6 shadow-lg border-2 border-transparent hover:border-purple-500 transition-all cursor-pointer">
@@ -167,7 +169,7 @@ export default function StockPage() {
                 </div>
               </div>
               <h3 className="text-sm mb-1" style={{ color: '#000000' }}>Total Production</h3>
-              <p className="text-3xl font-bold" style={{ color: '#000000' }}>{summary.totalProduction.toFixed(0)}</p>
+              <p className="text-3xl font-bold" style={{ color: '#000000' }}>{formatNumberWithCommas(summary.totalProduction, 0)}</p>
             </Link>
 
             <Link href="/dashboard/stock/waste" className="bg-white rounded-2xl p-6 shadow-lg border-2 border-transparent hover:border-red-500 transition-all cursor-pointer">
@@ -180,7 +182,7 @@ export default function StockPage() {
                 </div>
               </div>
               <h3 className="text-sm mb-1" style={{ color: '#000000' }}>Total Waste</h3>
-              <p className="text-3xl font-bold" style={{ color: '#000000' }}>{summary.totalWaste.toFixed(0)}</p>
+              <p className="text-3xl font-bold" style={{ color: '#000000' }}>{formatNumberWithCommas(summary.totalWaste, 0)}</p>
             </Link>
           </div>
         )}
@@ -226,9 +228,9 @@ export default function StockPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 font-medium" style={{ color: '#000000' }}>{movement.item?.name || 'Unknown'}</td>
-                      <td className="px-6 py-4" style={{ color: '#000000' }}>{Number(movement.quantity).toFixed(2)}</td>
+                      <td className="px-6 py-4" style={{ color: '#000000' }}>{formatNumberWithCommas(Number(movement.quantity))}</td>
                       <td className="px-6 py-4" style={{ color: '#000000' }}>
-                        {movement.unitCost ? `$${Number(movement.unitCost).toFixed(2)}` : '-'}
+                        {movement.unitCost ? `$${formatNumberWithCommas(Number(movement.unitCost))}` : '-'}
                       </td>
                       <td className="px-6 py-4 text-black">{movement.notes || '-'}</td>
                       <td className="px-6 py-4 text-black">
@@ -247,8 +249,8 @@ export default function StockPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-2xl font-bold" style={{ color: '#000000' }}>Add Stock Movement</h2>
+            <div className="p-4 sm:p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
+              <h2 className="text-xl sm:text-2xl font-bold" style={{ color: '#000000' }}>Add Stock Movement</h2>
               <button
                 onClick={() => setShowModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -259,10 +261,10 @@ export default function StockPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#000000' }}>Movement Type</label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                   {(['purchase', 'sale', 'production', 'adjustment', 'waste'] as const).map((type) => (
                     <button
                       key={type}
@@ -293,7 +295,7 @@ export default function StockPage() {
                   <option value="">Select an item...</option>
                   {items.map((item) => (
                     <option key={item.id} value={item.id}>
-                      {item.name} (Stock: {Number(item.stockQuantity).toFixed(2)} {item.unit})
+                      {item.name} (Stock: {formatNumberWithCommas(Number(item.stockQuantity))} {item.unit})
                     </option>
                   ))}
                 </select>
@@ -301,28 +303,26 @@ export default function StockPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#000000' }}>Quantity</label>
-                <input
-                  type="number"
-                  step="0.01"
+                <NumberInput
                   value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) })}
+                  onChange={(value) => setFormData({ ...formData, quantity: value })}
+                  min={0}
+                  allowDecimals={true}
                   className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
                   style={{ color: '#000000' }}
                   required
-                  min="0"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: '#000000' }}>Unit Cost (Optional)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.unitCost || ''}
-                  onChange={(e) => setFormData({ ...formData, unitCost: parseFloat(e.target.value) || 0 })}
+                <NumberInput
+                  value={formData.unitCost || 0}
+                  onChange={(value) => setFormData({ ...formData, unitCost: value })}
+                  min={0}
+                  allowDecimals={true}
                   className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
                   style={{ color: '#000000' }}
-                  min="0"
                 />
               </div>
 

@@ -166,12 +166,12 @@ export default function ExpensesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-black mb-2">Expenses</h1>
-          <p className="text-black">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black mb-2">Expenses</h1>
+          <p className="text-black text-sm sm:text-base">
             Manage your business expenses and track recurring costs
           </p>
         </div>
@@ -261,21 +261,22 @@ export default function ExpensesPage() {
 
         {/* Filters and Add Button */}
         <Card className="mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col gap-4">
             <div className="flex-1">
               <input
                 type="text"
                 placeholder="Search expenses..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black placeholder:text-black"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black placeholder:text-black text-sm sm:text-base"
               />
             </div>
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black"
-            >
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black text-sm sm:text-base"
+              >
               <option value="all">All Types</option>
               {expenseTypes.map((type) => (
                 <option key={type} value={type}>
@@ -286,7 +287,7 @@ export default function ExpensesPage() {
             <select
               value={filterRecurrence}
               onChange={(e) => setFilterRecurrence(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black"
+              className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-black text-sm sm:text-base"
             >
               <option value="all">All Frequencies</option>
               <option value={RecurrenceCycle.ONCE}>One-time</option>
@@ -297,8 +298,8 @@ export default function ExpensesPage() {
               <option value={RecurrenceCycle.QUARTERLY}>Quarterly</option>
               <option value={RecurrenceCycle.YEARLY}>Yearly</option>
             </select>
-            <Button onClick={handleAdd} className="whitespace-nowrap">
-              <span className="flex items-center">
+            <Button onClick={handleAdd} className="whitespace-nowrap w-full sm:w-auto">
+              <span className="flex items-center justify-center">
                 <svg
                   className="w-5 h-5 mr-2"
                   fill="none"
@@ -315,6 +316,7 @@ export default function ExpensesPage() {
                 Add Expense
               </span>
             </Button>
+            </div>
           </div>
         </Card>
 
@@ -349,10 +351,10 @@ export default function ExpensesPage() {
                 className="hover:shadow-lg transition-all"
                 hover
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-black">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                      <h3 className="text-base sm:text-lg font-semibold text-black">
                         {expense.description}
                       </h3>
                       <Badge variant="default">{expense.type}</Badge>

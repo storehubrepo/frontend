@@ -6,6 +6,8 @@ import { itemsApi, CreateItemDto, Item } from '@/lib/api/items';
 import { recipesApi, Recipe } from '@/lib/api/items';
 import { getAuthToken } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
+import { NumberInput } from '@/components/ui/NumberInput';
+import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
 import theme from '@/styles/theme';
 
 interface RecipeIngredient {
@@ -204,6 +206,22 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
     setRecipeIngredients(recipeIngredients.filter(ing => ing.ingredientId !== ingredientId));
   };
 
+  // Calculate total recipe cost
+  const calculateRecipeCost = () => {
+    return recipeIngredients.reduce((total, ing) => {
+      const ingredient = availableItems.find(item => item.id === ing.ingredientId);
+      const ingredientCost = ingredient?.purchasePrice || 0;
+      return total + (ingredientCost * ing.quantity);
+    }, 0);
+  };
+
+  // Calculate cost per unit
+  const calculateCostPerUnit = () => {
+    const totalCost = calculateRecipeCost();
+    const yield_ = formData.recipeYield || 1;
+    return totalCost / yield_;
+  };
+
   if (loading) {
     return (
       <div style={{ 
@@ -384,11 +402,20 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
                       color: '#000000',
                     }}
                   >
+                    <option value="piece">Piece</option>
+                    <option value="dozen">Dozen</option>
+                    <option value="box">Box</option>
+                    <option value="pack">Pack</option>
                     <option value="kg">Kilogram (kg)</option>
                     <option value="gram">Gram (g)</option>
                     <option value="liter">Liter (L)</option>
                     <option value="ml">Milliliter (ml)</option>
-                    <option value="piece">Piece</option>
+                    <option value="gallon">Gallon</option>
+                    <option value="cup">Cup</option>
+                    <option value="tablespoon">Tablespoon (tbsp)</option>
+                    <option value="teaspoon">Teaspoon (tsp)</option>
+                    <option value="ounce">Ounce (oz)</option>
+                    <option value="pound">Pound (lb)</option>
                   </select>
                 </div>
               </div>
@@ -414,24 +441,14 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               {item?.type === 'raw_material' && (
                 <div>
-                  <label style={{ 
-                    display: 'block',
-                    marginBottom: '0.5rem',
-                    fontWeight: '500',
-                    color: '#000000',
-                  }}>
-                    Purchase Price
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.purchasePrice || ''}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      purchasePrice: e.target.value ? parseFloat(e.target.value) : undefined 
-                    })}
+                  <NumberInput
+                    label="Purchase Price"
+                    value={formData.purchasePrice || 0}
+                    onChange={(value) => setFormData({ ...formData, purchasePrice: value })}
+                    min={0}
+                    allowDecimals={true}
+                    className="w-full"
                     style={{
-                      width: '100%',
                       padding: '0.75rem',
                       border: `1px solid ${theme.colors.border}`,
                       borderRadius: theme.borderRadius.sm,
@@ -443,24 +460,14 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
               )}
 
               <div>
-                <label style={{ 
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: '500',
-                  color: '#000000',
-                }}>
-                  Selling Price
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.sellingPrice || ''}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    sellingPrice: e.target.value ? parseFloat(e.target.value) : undefined 
-                  })}
+                <NumberInput
+                  label="Selling Price"
+                  value={formData.sellingPrice || 0}
+                  onChange={(value) => setFormData({ ...formData, sellingPrice: value })}
+                  min={0}
+                  allowDecimals={true}
+                  className="w-full"
                   style={{
-                    width: '100%',
                     padding: '0.75rem',
                     border: `1px solid ${theme.colors.border}`,
                     borderRadius: theme.borderRadius.sm,
@@ -473,24 +480,14 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
               {item?.type === 'manufactured' && (
                 <>
                   <div>
-                    <label style={{ 
-                      display: 'block',
-                      marginBottom: '0.5rem',
-                      fontWeight: '500',
-                      color: '#000000',
-                    }}>
-                      Labor Cost
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
+                    <NumberInput
+                      label="Labor Cost"
                       value={formData.laborCost || 0}
-                      onChange={(e) => setFormData({ 
-                        ...formData, 
-                        laborCost: parseFloat(e.target.value) || 0 
-                      })}
+                      onChange={(value) => setFormData({ ...formData, laborCost: value })}
+                      min={0}
+                      allowDecimals={true}
+                      className="w-full"
                       style={{
-                        width: '100%',
                         padding: '0.75rem',
                         border: `1px solid ${theme.colors.border}`,
                         borderRadius: theme.borderRadius.sm,
@@ -501,24 +498,14 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
                   </div>
 
                   <div>
-                    <label style={{ 
-                      display: 'block',
-                      marginBottom: '0.5rem',
-                      fontWeight: '500',
-                      color: '#000000',
-                    }}>
-                      Utilities Cost
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
+                    <NumberInput
+                      label="Utilities Cost"
                       value={formData.utilitiesCost || 0}
-                      onChange={(e) => setFormData({ 
-                        ...formData, 
-                        utilitiesCost: parseFloat(e.target.value) || 0 
-                      })}
+                      onChange={(value) => setFormData({ ...formData, utilitiesCost: value })}
+                      min={0}
+                      allowDecimals={true}
+                      className="w-full"
                       style={{
-                        width: '100%',
                         padding: '0.75rem',
                         border: `1px solid ${theme.colors.border}`,
                         borderRadius: theme.borderRadius.sm,
@@ -529,24 +516,14 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
                   </div>
 
                   <div>
-                    <label style={{ 
-                      display: 'block',
-                      marginBottom: '0.5rem',
-                      fontWeight: '500',
-                      color: '#000000',
-                    }}>
-                      Recipe Yield
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={formData.recipeYield || ''}
-                      onChange={(e) => setFormData({ 
-                        ...formData, 
-                        recipeYield: e.target.value ? parseFloat(e.target.value) : undefined 
-                      })}
+                    <NumberInput
+                      label="Recipe Yield"
+                      value={formData.recipeYield || 0}
+                      onChange={(value) => setFormData({ ...formData, recipeYield: value })}
+                      min={0}
+                      allowDecimals={true}
+                      className="w-full"
                       style={{
-                        width: '100%',
                         padding: '0.75rem',
                         border: `1px solid ${theme.colors.border}`,
                         borderRadius: theme.borderRadius.sm,
@@ -592,7 +569,7 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
                     }}
                   >
                     <span style={{ color: '#000000' }}>
-                      {ing.ingredientName} - {ing.quantity} {ing.unit}
+                      {ing.ingredientName} - {formatNumberWithCommas(ing.quantity)} {ing.unit}
                     </span>
                     <Button
                       type="button"
@@ -608,7 +585,72 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
                 ))}
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+              {/* Cost Breakdown */}
+              {recipeIngredients.length > 0 && (
+                <div style={{
+                  marginTop: '1.5rem',
+                  padding: '1rem',
+                  backgroundColor: theme.colors.accent.blue + '15',
+                  border: `2px solid ${theme.colors.accent.blue}`,
+                  borderRadius: theme.borderRadius.sm,
+                }}>
+                  <h3 style={{ fontWeight: '600', marginBottom: '0.75rem', color: '#000000' }}>
+                    💰 Cost Breakdown
+                  </h3>
+                  <div style={{ display: 'grid', gap: '0.5rem', fontSize: '0.9rem' }}>
+                    {recipeIngredients.map((ing) => {
+                      const ingredient = availableItems.find(item => item.id === ing.ingredientId);
+                      const ingredientCost = (ingredient?.purchasePrice || 0) * ing.quantity;
+                      return (
+                        <div key={ing.ingredientId} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: theme.colors.text.secondary }}>
+                            {ing.ingredientName}: {formatNumberWithCommas(ing.quantity)} {ing.unit} × ${formatNumberWithCommas(ingredient?.purchasePrice || 0)}
+                          </span>
+                          <span style={{ fontWeight: '600', color: '#000000' }}>
+                            ${formatNumberWithCommas(ingredientCost)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    <div style={{ borderTop: `1px solid ${theme.colors.border}`, paddingTop: '0.5rem', marginTop: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+                        <span style={{ color: '#000000' }}>Total Recipe Cost:</span>
+                        <span style={{ color: '#000000' }}>${formatNumberWithCommas(calculateRecipeCost())}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginTop: '0.5rem', color: theme.colors.accent.green }}>
+                        <span>Cost Per Unit (÷ {formData.recipeYield || 1}):</span>
+                        <span>${formatNumberWithCommas(calculateCostPerUnit())}</span>
+                      </div>
+                      {formData.sellingPrice && (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                            <span style={{ color: theme.colors.text.secondary }}>Selling Price:</span>
+                            <span style={{ color: '#000000' }}>${formatNumberWithCommas(formData.sellingPrice)}</span>
+                          </div>
+                          <div style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            fontWeight: 'bold', 
+                            marginTop: '0.5rem',
+                            color: formData.sellingPrice > calculateCostPerUnit() ? theme.colors.accent.green : theme.colors.accent.red
+                          }}>
+                            <span>Profit Per Unit:</span>
+                            <span>${formatNumberWithCommas(formData.sellingPrice - calculateCostPerUnit())}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                            <span style={{ color: theme.colors.text.secondary }}>Profit Margin:</span>
+                            <span style={{ color: theme.colors.text.secondary }}>
+                              {((((formData.sellingPrice - calculateCostPerUnit()) / formData.sellingPrice) * 100) || 0).toFixed(1)}%
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ 
                     display: 'block',

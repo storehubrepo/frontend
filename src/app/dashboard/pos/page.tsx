@@ -80,6 +80,19 @@ export default function POSPage() {
     }
   };
 
+  // Calculate cost per unit for manufactured products
+  const calculateCostPerUnit = (item: Item) => {
+    if (item.type !== 'manufactured' || !item.recipes || item.recipes.length === 0) {
+      return 0;
+    }
+    const totalCost = item.recipes.reduce((sum, recipe) => {
+      const ingredientCost = recipe.childItem?.purchasePrice || 0;
+      return sum + (ingredientCost * recipe.quantityNeeded);
+    }, 0);
+    const yield_ = item.recipeYield || 1;
+    return totalCost / yield_;
+  };
+
   const saveCartsToStorage = (updatedCarts: Cart[]) => {
     localStorage.setItem('pos_carts', JSON.stringify(updatedCarts));
     setCarts(updatedCarts);
@@ -285,30 +298,30 @@ Thank you for your business!
   }
 
   return (
-    <div className="min-h-screen p-8" style={{ background: theme.colors.background.secondary }}>
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8" style={{ background: theme.colors.background.secondary }}>
       <div className="max-w-[1800px] mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold mb-2" style={{ color: '#000000' }}>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2" style={{ color: '#000000' }}>
                 Point of Sale
               </h1>
-              <p style={{ color: '#000000' }}>
+              <p className="text-sm sm:text-base" style={{ color: '#000000' }}>
                 Manage orders and sales
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => setShowCartTypesModal(true)}
-                className="px-6 py-3 rounded-xl hover:opacity-90 transition-opacity font-semibold"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl hover:opacity-90 transition-opacity font-semibold"
                 style={{ background: theme.colors.accent.purple, color: 'white' }}
               >
                 Manage Types
               </button>
               <button
                 onClick={() => setShowNewCartModal(true)}
-                className="px-6 py-3 rounded-xl hover:opacity-90 transition-opacity font-semibold"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl hover:opacity-90 transition-opacity font-semibold"
                 style={{ background: theme.colors.primary.black, color: 'white' }}
               >
                 + New Order
@@ -317,9 +330,9 @@ Thank you for your business!
           </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Categories Grid - Left Side */}
-          <div className="col-span-7">
+          <div className="lg:col-span-7">
             <div
               className="rounded-xl p-6"
               style={{
@@ -337,7 +350,7 @@ Thank you for your business!
                   No categories available
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                   {getCategories().map((category) => {
                     const productsInCategory = getProductsByCategory(category);
                     return (
@@ -382,7 +395,7 @@ Thank you for your business!
           </div>
 
           {/* Cart Management - Right Side */}
-          <div className="col-span-5">
+          <div className="lg:col-span-5">
             {/* Cart Tabs */}
             <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
               {carts.map((cart) => (
@@ -803,18 +816,38 @@ Thank you for your business!
                   </div>
 
                   {/* Price */}
-                  <div className="flex items-center justify-between pt-3" style={{ borderTop: `1px solid ${theme.colors.border}` }}>
-                    <div className="text-2xl font-bold" style={{ color: theme.colors.accent.green }}>
-                      ${Number(product.sellingPrice || 0).toFixed(2)}
-                    </div>
-                    <div 
-                      className="text-xs font-semibold px-3 py-1 rounded-full"
-                      style={{ 
-                        background: theme.colors.primary.black,
-                        color: 'white',
-                      }}
-                    >
-                      + Add
+                  <div className="pt-3" style={{ borderTop: `1px solid ${theme.colors.border}` }}>
+                    {product.type === 'manufactured' && product.recipes && product.recipes.length > 0 && (
+                      <div className="mb-2 space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span style={{ color: theme.colors.text.secondary }}>Cost per Unit:</span>
+                          <span className="font-semibold" style={{ color: theme.colors.accent.blue }}>
+                            ${calculateCostPerUnit(product).toFixed(2)}
+                          </span>
+                        </div>
+                        {product.sellingPrice && (
+                          <div className="flex justify-between text-xs">
+                            <span style={{ color: theme.colors.text.secondary }}>Profit per Unit:</span>
+                            <span className="font-semibold" style={{ color: theme.colors.accent.green }}>
+                              ${(Number(product.sellingPrice) - calculateCostPerUnit(product)).toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <div className="text-2xl font-bold" style={{ color: theme.colors.accent.green }}>
+                        ${Number(product.sellingPrice || 0).toFixed(2)}
+                      </div>
+                      <div 
+                        className="text-xs font-semibold px-3 py-1 rounded-full"
+                        style={{ 
+                          background: theme.colors.primary.black,
+                          color: 'white',
+                        }}
+                      >
+                        + Add
+                      </div>
                     </div>
                   </div>
                 </button>

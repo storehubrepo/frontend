@@ -93,7 +93,7 @@ export default function Home() {
         </div>
 
         {/* Phone Mockups */}
-        <div className="grid md:grid-cols-2 gap-12 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 max-w-4xl mx-auto">
           {/* Create Account Phone */}
           <div className="animate-slide-up">
             <div className="relative mx-auto" style={{ maxWidth: '280px' }}>

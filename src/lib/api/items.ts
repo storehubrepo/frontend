@@ -8,7 +8,7 @@ export interface Item {
   description?: string;
   type: 'raw_material' | 'manufactured';
   category?: string;
-  unit: 'kg' | 'gram' | 'liter' | 'ml' | 'piece';
+  unit: 'piece' | 'dozen' | 'box' | 'pack' | 'kg' | 'gram' | 'liter' | 'ml' | 'gallon' | 'cup' | 'tablespoon' | 'teaspoon' | 'ounce' | 'pound';
   purchasePrice?: number;
   sellingPrice?: number;
   laborCost: number;
@@ -35,7 +35,7 @@ export interface CreateItemDto {
   description?: string;
   type: 'raw_material' | 'manufactured';
   category?: string;
-  unit: 'kg' | 'gram' | 'liter' | 'ml' | 'piece';
+  unit: 'piece' | 'dozen' | 'box' | 'pack' | 'kg' | 'gram' | 'liter' | 'ml' | 'gallon' | 'cup' | 'tablespoon' | 'teaspoon' | 'ounce' | 'pound';
   purchasePrice?: number;
   sellingPrice?: number;
   laborCost?: number;

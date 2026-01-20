@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
 import { getAuthToken } from '@/lib/auth';
+import { NumberInput } from '@/components/ui/NumberInput';
 
 interface ExpenseFormProps {
   expense?: Expense | null;
@@ -196,16 +197,14 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
         {/* Cost */}
         <div>
-          <Input
+          <NumberInput
             label="Cost"
-            type="number"
-            step="0.01"
-            min="0"
+            value={formData.cost}
+            onChange={(value) => setFormData({ ...formData, cost: value })}
             placeholder="0.00"
-            value={formData.cost || ''}
-            onChange={(e) =>
-              setFormData({ ...formData, cost: parseFloat(e.target.value) || 0 })
-            }
+            min={0}
+            allowDecimals={true}
+            className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black text-black"
             required
           />
         </div>

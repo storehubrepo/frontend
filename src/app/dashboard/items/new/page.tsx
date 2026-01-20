@@ -6,6 +6,8 @@ import { itemsApi, CreateItemDto, Item } from '@/lib/api/items';
 import { recipesApi } from '@/lib/api/items';
 import { getAuthToken } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
+import { NumberInput } from '@/components/ui/NumberInput';
+import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
 import theme from '@/styles/theme';
 
 interface RecipeIngredient {
@@ -195,14 +197,30 @@ export default function NewItemPage() {
 
   const getIngredientById = (id: string) => availableItems.find(item => item.id === id);
 
+  // Calculate total recipe cost
+  const calculateRecipeCost = () => {
+    return recipe.reduce((total, recipeItem) => {
+      const ingredient = getIngredientById(recipeItem.ingredientId);
+      const ingredientCost = ingredient?.purchasePrice || 0;
+      return total + (ingredientCost * recipeItem.quantity);
+    }, 0);
+  };
+
+  // Calculate cost per unit (total cost / yield)
+  const calculateCostPerUnit = () => {
+    const totalCost = calculateRecipeCost();
+    const yield_ = formData.recipeYield || 1;
+    return totalCost / yield_;
+  };
+
   return (
-    <div className="min-h-screen p-8" style={{ background: theme.colors.background.secondary }}>
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8" style={{ background: theme.colors.background.secondary }}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <button
             onClick={() => router.back()}
-            className="flex items-center mb-4 hover:opacity-70 transition-opacity"
+            className="flex items-center mb-4 hover:opacity-70 transition-opacity text-sm sm:text-base"
             style={{ color: theme.colors.text.secondary }}
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -210,10 +228,10 @@ export default function NewItemPage() {
             </svg>
             Back
           </button>
-          <h1 className="text-3xl font-bold" style={{ color: theme.colors.text.primary }}>
+          <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: theme.colors.text.primary }}>
             Add New Item
           </h1>
-          <p style={{ color: theme.colors.text.secondary }}>
+          <p className="text-sm sm:text-base" style={{ color: theme.colors.text.secondary }}>
             Create a new raw material or product
           </p>
         </div>
@@ -242,7 +260,7 @@ export default function NewItemPage() {
               <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text.primary }}>
                 Item Type *
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -366,25 +384,31 @@ export default function NewItemPage() {
                 }}
               >
                 <option value="piece">Piece</option>
+                <option value="dozen">Dozen</option>
+                <option value="box">Box</option>
+                <option value="pack">Pack</option>
                 <option value="kg">Kilogram (kg)</option>
                 <option value="gram">Gram (g)</option>
                 <option value="liter">Liter (L)</option>
                 <option value="ml">Milliliter (ml)</option>
+                <option value="gallon">Gallon</option>
+                <option value="cup">Cup</option>
+                <option value="tablespoon">Tablespoon (tbsp)</option>
+                <option value="teaspoon">Teaspoon (tsp)</option>
+                <option value="ounce">Ounce (oz)</option>
+                <option value="pound">Pound (lb)</option>
               </select>
             </div>
 
             {/* Price Fields */}
             {formData.type === 'raw_material' ? (
               <div className="mb-6">
-                <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text.primary }}>
-                  Purchase Price per Unit ($)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.purchasePrice || ''}
-                  onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value ? parseFloat(e.target.value) : undefined })}
+                <NumberInput
+                  label="Purchase Price per Unit ($)"
+                  value={formData.purchasePrice || 0}
+                  onChange={(value) => setFormData({ ...formData, purchasePrice: value })}
+                  min={0}
+                  allowDecimals={true}
                   className="w-full h-12 px-4 rounded-xl"
                   style={{
                     background: theme.colors.background.secondary,
@@ -397,15 +421,12 @@ export default function NewItemPage() {
             ) : (
               <>
                 <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text.primary }}>
-                    Selling Price ($) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.sellingPrice || ''}
-                    onChange={(e) => setFormData({ ...formData, sellingPrice: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  <NumberInput
+                    label="Selling Price ($) *"
+                    value={formData.sellingPrice || 0}
+                    onChange={(value) => setFormData({ ...formData, sellingPrice: value })}
+                    min={0}
+                    allowDecimals={true}
                     className="w-full h-12 px-4 rounded-xl"
                     style={{
                       background: theme.colors.background.secondary,
@@ -417,17 +438,14 @@ export default function NewItemPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text.primary }}>
-                      Labor Cost ($)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
+                    <NumberInput
+                      label="Labor Cost ($)"
                       value={formData.laborCost}
-                      onChange={(e) => setFormData({ ...formData, laborCost: parseFloat(e.target.value) || 0 })}
+                      onChange={(value) => setFormData({ ...formData, laborCost: value })}
+                      min={0}
+                      allowDecimals={true}
                       className="w-full h-12 px-4 rounded-xl"
                       style={{
                         background: theme.colors.background.secondary,
@@ -438,15 +456,12 @@ export default function NewItemPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text.primary }}>
-                      Utilities Cost ($)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
+                    <NumberInput
+                      label="Utilities Cost ($)"
                       value={formData.utilitiesCost}
-                      onChange={(e) => setFormData({ ...formData, utilitiesCost: parseFloat(e.target.value) || 0 })}
+                      onChange={(value) => setFormData({ ...formData, utilitiesCost: value })}
+                      min={0}
+                      allowDecimals={true}
                       className="w-full h-12 px-4 rounded-xl"
                       style={{
                         background: theme.colors.background.secondary,
@@ -459,15 +474,12 @@ export default function NewItemPage() {
                 </div>
 
                 <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text.primary }}>
-                    Recipe Yield *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.recipeYield || ''}
-                    onChange={(e) => setFormData({ ...formData, recipeYield: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  <NumberInput
+                    label="Recipe Yield *"
+                    value={formData.recipeYield || 0}
+                    onChange={(value) => setFormData({ ...formData, recipeYield: value })}
+                    min={0}
+                    allowDecimals={true}
                     className="w-full h-12 px-4 rounded-xl"
                     style={{
                       background: theme.colors.background.secondary,
@@ -486,15 +498,12 @@ export default function NewItemPage() {
 
             {/* Stock */}
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text.primary }}>
-                Initial Stock Quantity
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
+              <NumberInput
+                label="Initial Stock Quantity"
                 value={formData.stockQuantity}
-                onChange={(e) => setFormData({ ...formData, stockQuantity: parseFloat(e.target.value) || 0 })}
+                onChange={(value) => setFormData({ ...formData, stockQuantity: value })}
+                min={0}
+                allowDecimals={true}
                 className="w-full h-12 px-4 rounded-xl"
                 style={{
                   background: theme.colors.background.secondary,
@@ -525,8 +534,8 @@ export default function NewItemPage() {
 
               {/* Add Ingredient Form */}
               <div className="mb-6 p-4 rounded-lg" style={{ background: theme.colors.background.secondary }}>
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-6">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="sm:col-span-6">
                     <label className="block text-xs font-medium mb-2" style={{ color: theme.colors.text.primary }}>
                       Select Ingredient
                     </label>
@@ -550,16 +559,15 @@ export default function NewItemPage() {
                         ))}
                     </select>
                   </div>
-                  <div className="col-span-4">
+                  <div className="sm:col-span-4">
                     <label className="block text-xs font-medium mb-2" style={{ color: theme.colors.text.primary }}>
                       Quantity
                     </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={ingredientQuantity || ''}
-                      onChange={(e) => setIngredientQuantity(parseFloat(e.target.value) || 0)}
+                    <NumberInput
+                      value={ingredientQuantity}
+                      onChange={(value) => setIngredientQuantity(value)}
+                      min={0}
+                      allowDecimals={true}
                       className="w-full h-10 px-3 rounded-lg text-sm"
                       style={{
                         background: theme.colors.background.card,
@@ -569,7 +577,7 @@ export default function NewItemPage() {
                       placeholder="0.00"
                     />
                   </div>
-                  <div className="col-span-2 flex items-end">
+                  <div className="sm:col-span-2 flex items-end">
                     <button
                       type="button"
                       onClick={addIngredientToRecipe}
@@ -610,7 +618,7 @@ export default function NewItemPage() {
                             {ingredient?.name || 'Unknown'}
                           </div>
                           <div className="text-sm" style={{ color: theme.colors.text.secondary }}>
-                            {recipeItem.quantity} {ingredient?.unit}
+                            {formatNumberWithCommas(recipeItem.quantity)} {ingredient?.unit}
                           </div>
                         </div>
                         <button
@@ -626,11 +634,62 @@ export default function NewItemPage() {
                   })}
                 </div>
               )}
+
+              {/* Cost Breakdown - Only show if recipe has ingredients */}
+              {recipe.length > 0 && (
+                <div className="mt-6 p-4 rounded-lg" style={{ background: theme.colors.accent.blue + '15', border: `2px solid ${theme.colors.accent.blue}` }}>
+                  <h3 className="font-bold mb-3" style={{ color: theme.colors.text.primary }}>💰 Cost Breakdown</h3>
+                  <div className="space-y-2">
+                    {recipe.map((recipeItem) => {
+                      const ingredient = getIngredientById(recipeItem.ingredientId);
+                      const ingredientCost = (ingredient?.purchasePrice || 0) * recipeItem.quantity;
+                      return (
+                        <div key={recipeItem.ingredientId} className="flex justify-between text-sm">
+                          <span style={{ color: theme.colors.text.secondary }}>
+                            {ingredient?.name}: {formatNumberWithCommas(recipeItem.quantity)} {ingredient?.unit} × ${formatNumberWithCommas(ingredient?.purchasePrice || 0)}
+                          </span>
+                          <span className="font-semibold" style={{ color: theme.colors.text.primary }}>
+                            ${formatNumberWithCommas(ingredientCost)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    <div className="border-t pt-2 mt-2" style={{ borderColor: theme.colors.border }}>
+                      <div className="flex justify-between font-bold">
+                        <span style={{ color: theme.colors.text.primary }}>Total Recipe Cost:</span>
+                        <span style={{ color: theme.colors.text.primary }}>${formatNumberWithCommas(calculateRecipeCost())}</span>
+                      </div>
+                      <div className="flex justify-between font-bold mt-2" style={{ color: theme.colors.accent.green }}>
+                        <span>Cost Per Unit (÷ {formData.recipeYield || 1}):</span>
+                        <span>${formatNumberWithCommas(calculateCostPerUnit())}</span>
+                      </div>
+                      {formData.sellingPrice && (
+                        <>
+                          <div className="flex justify-between mt-2">
+                            <span style={{ color: theme.colors.text.secondary }}>Selling Price:</span>
+                            <span style={{ color: theme.colors.text.primary }}>${formatNumberWithCommas(formData.sellingPrice)}</span>
+                          </div>
+                          <div className="flex justify-between font-bold mt-2" style={{ color: formData.sellingPrice > calculateCostPerUnit() ? theme.colors.accent.green : theme.colors.accent.red }}>
+                            <span>Profit Per Unit:</span>
+                            <span>${formatNumberWithCommas(formData.sellingPrice - calculateCostPerUnit())}</span>
+                          </div>
+                          <div className="flex justify-between text-sm mt-1">
+                            <span style={{ color: theme.colors.text.secondary }}>Profit Margin:</span>
+                            <span style={{ color: theme.colors.text.secondary }}>
+                              {((((formData.sellingPrice - calculateCostPerUnit()) / formData.sellingPrice) * 100) || 0).toFixed(1)}%
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row gap-4 pt-4">
             <button
               type="submit"
               disabled={loading || (formData.type === 'manufactured' && recipe.length === 0)}

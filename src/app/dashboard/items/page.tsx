@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { itemsApi, Item } from '@/lib/api/items';
 import { getAuthToken } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
+import { formatCurrency, formatNumberWithCommas } from '@/lib/utils/numberFormat';
 import theme from '@/styles/theme';
 
 export default function ItemsPage() {
@@ -42,6 +43,19 @@ export default function ItemsPage() {
     ? items 
     : items.filter(item => item.category === categoryFilter);
 
+  // Calculate cost per unit for manufactured products
+  const calculateCostPerUnit = (item: Item) => {
+    if (item.type !== 'manufactured' || !item.recipes || item.recipes.length === 0) {
+      return 0;
+    }
+    const totalCost = item.recipes.reduce((sum, recipe) => {
+      const ingredientCost = recipe.childItem?.purchasePrice || 0;
+      return sum + (ingredientCost * recipe.quantityNeeded);
+    }, 0);
+    const yield_ = item.recipeYield || 1;
+    return totalCost / yield_;
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this item?')) return;
 
@@ -57,15 +71,15 @@ export default function ItemsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white p-8">
+    <div className="min-h-screen bg-white p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold" style={{ color: '#000000' }}>Items Management</h1>
-            <p style={{ color: '#000000' }} className="mt-1">Manage your raw materials and products</p>
+            <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: '#000000' }}>Items Management</h1>
+            <p style={{ color: '#000000' }} className="mt-1 text-sm sm:text-base">Manage your raw materials and products</p>
           </div>
-          <Button onClick={() => router.push('/dashboard/items/new')}>
+          <Button onClick={() => router.push('/dashboard/items/new')} className="w-full sm:w-auto">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -76,10 +90,10 @@ export default function ItemsPage() {
         {/* Filters */}
         <div className="mb-6">
           {/* Type Filters */}
-          <div className="flex gap-4 mb-4">
+          <div className="flex flex-wrap gap-2 sm:gap-4 mb-4">
             <button
               onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base ${
                 filter === 'all'
                   ? 'bg-black text-white'
                   : 'bg-gray-100 text-black hover:bg-gray-200'
@@ -189,18 +203,38 @@ export default function ItemsPage() {
                   {item.type === 'raw_material' && item.purchasePrice && (
                     <div className="flex justify-between text-sm">
                       <span className="text-black">Purchase Price:</span>
-                      <span className="font-semibold">${Number(item.purchasePrice).toFixed(2)}</span>
+                      <span className="font-semibold">{formatCurrency(item.purchasePrice)}</span>
                     </div>
                   )}
-                  {item.type === 'manufactured' && item.sellingPrice && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-black">Selling Price:</span>
-                      <span className="font-semibold">${Number(item.sellingPrice).toFixed(2)}</span>
-                    </div>
+                  {item.type === 'manufactured' && (
+                    <>
+                      {item.recipes && item.recipes.length > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-black">Cost per Unit:</span>
+                          <span className="font-semibold text-blue-600">{formatCurrency(calculateCostPerUnit(item))}</span>
+                        </div>
+                      )}
+                      {item.sellingPrice && (
+                        <>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-black">Selling Price:</span>
+                            <span className="font-semibold">{formatCurrency(item.sellingPrice)}</span>
+                          </div>
+                          {item.recipes && item.recipes.length > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-black">Profit per Unit:</span>
+                              <span className={`font-semibold ${item.sellingPrice > calculateCostPerUnit(item) ? 'text-green-600' : 'text-red-600'}`}>
+                                {formatCurrency(item.sellingPrice - calculateCostPerUnit(item))}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </>
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-black">Stock:</span>
-                    <span className="font-semibold">{Number(item.stockQuantity).toFixed(2)} {item.unit}</span>
+                    <span className="font-semibold">{formatNumberWithCommas(Number(item.stockQuantity))} {item.unit}</span>
                   </div>
                 </div>
 

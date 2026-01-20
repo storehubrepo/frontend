@@ -163,13 +163,13 @@ export default function SalesAnalyticsPage() {
   )) as string[];
 
   return (
-    <div className="min-h-screen p-8" style={{ background: theme.colors.background.secondary }}>
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8" style={{ background: theme.colors.background.secondary }}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <button
             onClick={() => router.back()}
-            className="flex items-center mb-4 hover:opacity-70 transition-opacity"
+            className="flex items-center mb-4 hover:opacity-70 transition-opacity text-sm sm:text-base"
             style={{ color: theme.colors.text.secondary }}
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,23 +177,23 @@ export default function SalesAnalyticsPage() {
             </svg>
             Back
           </button>
-          <h1 className="text-4xl font-bold mb-2" style={{ color: theme.colors.text.primary }}>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2" style={{ color: theme.colors.text.primary }}>
             📊 Sales Analytics
           </h1>
-          <p style={{ color: theme.colors.text.secondary }}>
+          <p className="text-sm sm:text-base" style={{ color: theme.colors.text.secondary }}>
             Track your sales performance over time
           </p>
         </div>
 
         {/* Filter Section */}
-        <div className="mb-8 space-y-4">
+        <div className="mb-6 sm:mb-8 space-y-4">
           {/* Time Filters */}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             {(['day', 'week', 'month', 'year'] as TimeFilter[]).map((filter) => (
               <button
                 key={filter}
                 onClick={() => setTimeFilter(filter)}
-                className="px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105"
+                className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all transform hover:scale-105 text-sm sm:text-base"
                 style={{
                   background: timeFilter === filter ? theme.colors.primary.black : theme.colors.background.card,
                   color: timeFilter === filter ? 'white' : theme.colors.text.primary,
@@ -206,7 +206,7 @@ export default function SalesAnalyticsPage() {
           </div>
 
           {/* Item Type Filters */}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             <button
               onClick={() => {
                 setItemType('all');

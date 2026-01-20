@@ -71,18 +71,18 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2" style={{ color: '#000000' }}>Profit Reports</h1>
-          <p style={{ color: '#000000' }}>Generate detailed profit and loss reports</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2" style={{ color: '#000000' }}>Profit Reports</h1>
+          <p className="text-sm sm:text-base" style={{ color: '#000000' }}>Generate detailed profit and loss reports</p>
         </div>
 
         {/* Date Filter */}
         <div className="bg-white rounded-2xl p-6 shadow-lg mb-8">
           <h2 className="text-xl font-bold mb-4" style={{ color: '#000000' }}>Report Period</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: '#000000' }}>Start Date</label>
               <input
