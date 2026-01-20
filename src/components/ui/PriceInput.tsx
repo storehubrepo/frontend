@@ -3,8 +3,7 @@
 import React from 'react';
 import { Input } from './Input';
 import { CurrencySelector } from './CurrencySelector';
-import { Currency, convertCurrency } from '@/lib/utils/currency';
-import { useCurrency } from '@/lib/context/CurrencyContext';
+import { Currency } from '@/lib/utils/currency';
 
 interface PriceInputProps {
   value: number;
@@ -27,17 +26,6 @@ export function PriceInput({
   disabled,
   required,
 }: PriceInputProps) {
-  const { currency: displayCurrency } = useCurrency();
-
-  // Convert the stored value to display currency for showing
-  const displayValue = convertCurrency(value, currency, displayCurrency);
-
-  const handleValueChange = (newDisplayValue: number) => {
-    // Convert back to the stored currency
-    const newStoredValue = convertCurrency(newDisplayValue, displayCurrency, currency);
-    onChange(newStoredValue);
-  };
-
   return (
     <div className="flex flex-col gap-2">
       {label && (
@@ -50,8 +38,8 @@ export function PriceInput({
         <div className="flex-1">
           <Input
             type="number"
-            value={displayValue || ''}
-            onChange={(e) => handleValueChange(parseFloat(e.target.value) || 0)}
+            value={value || ''}
+            onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
             placeholder={placeholder}
             disabled={disabled}
             step="0.01"
@@ -66,11 +54,6 @@ export function PriceInput({
           />
         </div>
       </div>
-      {displayCurrency !== currency && value > 0 && (
-        <p className="text-xs text-gray-500">
-          Stored as: {value.toFixed(2)} {currency}
-        </p>
-      )}
     </div>
   );
 }

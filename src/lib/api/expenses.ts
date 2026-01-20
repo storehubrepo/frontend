@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Currency } from '../utils/currency';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -17,6 +18,7 @@ export interface Expense {
   description: string;
   type: string;
   cost: number;
+  currency?: Currency;
   date: string;
   recurrenceCycle: RecurrenceCycle;
   recurrenceEndDate: string | null;
@@ -31,6 +33,7 @@ export interface CreateExpenseDto {
   description: string;
   type: string;
   cost: number;
+  currency?: Currency;
   date: string;
   recurrenceCycle?: RecurrenceCycle;
   recurrenceEndDate?: string;

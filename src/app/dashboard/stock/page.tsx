@@ -327,8 +327,8 @@ export default function StockPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: '#000000' }}>Unit Cost (Optional)</label>
                 <PriceInput
+                  label="Unit Cost (Optional)"
                   value={formData.unitCost || 0}
                   onChange={(value) => setFormData({ ...formData, unitCost: value })}
                   currency={unitCostCurrency}
@@ -336,8 +336,6 @@ export default function StockPage() {
                     setUnitCostCurrency(currency);
                     setFormData({ ...formData, unitCostCurrency: currency });
                   }}
-                  className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
-                  style={{ color: '#000000' }}
                 />
               </div>
 

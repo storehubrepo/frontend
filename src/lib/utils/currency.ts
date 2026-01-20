@@ -46,10 +46,16 @@ export function formatPrice(
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   } else {
     // LBP - display with custom formatting
-    return `${amount.toLocaleString(locale)} LBP`;
+    const formatted = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+    return `${formatted} LBP`;
   }
 }
 

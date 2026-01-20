@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import ExpenseForm from '@/app/dashboard/expenses/ExpenseForm';
 import { getAuthToken } from '@/lib/auth';
+import { PriceDisplay } from '@/components/ui/PriceDisplay';
+import { Currency, convertCurrency } from '@/lib/utils/currency';
+import { useCurrency } from '@/lib/context/CurrencyContext';
 
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -19,6 +22,7 @@ export default function ExpensesPage() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterRecurrence, setFilterRecurrence] = useState<string>('all');
   const [expenseTypes, setExpenseTypes] = useState<string[]>([]);
+  const { currency } = useCurrency();
   
   useEffect(() => {
     loadExpenses();
@@ -143,14 +147,17 @@ export default function ExpensesPage() {
 
     return filteredExpenses.reduce((total, expense) => {
       const expenseDate = new Date(expense.date);
+      const expenseCurrency = expense.currency || Currency.USD;
+      const convertedCost = convertCurrency(Number(expense.cost), expenseCurrency, currency);
+      
       if (expense.recurrenceCycle === RecurrenceCycle.ONCE) {
         if (expenseDate >= monthStart && expenseDate <= monthEnd) {
-          return total + Number(expense.cost);
+          return total + convertedCost;
         }
       } else if (expense.isActive) {
         // For recurring, include if it's active this month
         if (expenseDate <= monthEnd) {
-          return total + Number(expense.cost);
+          return total + convertedCost;
         }
       }
       return total;
@@ -207,7 +214,7 @@ export default function ExpensesPage() {
               <div>
                 <p className="text-green-100 text-sm font-medium">This Month</p>
                 <p className="text-3xl font-bold mt-1">
-                  {formatCurrency(calculateMonthlyTotal())}
+                  <PriceDisplay amount={calculateMonthlyTotal()} currency={currency} />
                 </p>
               </div>
               <div className="bg-white bg-opacity-20 rounded-full p-3">
@@ -401,7 +408,10 @@ export default function ExpensesPage() {
                   <div className="flex items-center gap-4 ml-4">
                     <div className="text-right">
                       <p className="text-2xl font-bold text-black">
-                        {formatCurrency(expense.cost)}
+                        <PriceDisplay 
+                          amount={expense.cost} 
+                          currency={expense.currency || Currency.USD}
+                        />
                       </p>
                       {expense.recurrenceCycle !== RecurrenceCycle.ONCE && (
                         <p className="text-xs text-black">

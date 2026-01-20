@@ -7,7 +7,8 @@ import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
 import { getAuthToken } from '@/lib/auth';
-import { NumberInput } from '@/components/ui/NumberInput';
+import { PriceInput } from '@/components/ui/PriceInput';
+import { Currency } from '@/lib/utils/currency';
 
 interface ExpenseFormProps {
   expense?: Expense | null;
@@ -24,6 +25,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     description: '',
     type: '',
     cost: 0,
+    currency: Currency.USD,
     date: new Date().toISOString().split('T')[0],
     recurrenceCycle: RecurrenceCycle.ONCE,
     recurrenceEndDate: undefined,
@@ -34,14 +36,18 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const [customType, setCustomType] = useState('');
   const [useCustomType, setUseCustomType] = useState(false);
   const [existingTypes, setExistingTypes] = useState<string[]>([]);
+  const [costCurrency, setCostCurrency] = useState<Currency>(Currency.USD);
 
   useEffect(() => {
     loadExistingTypes();
     if (expense) {
+      const expenseCurrency = expense.currency || Currency.USD;
+      setCostCurrency(expenseCurrency);
       setFormData({
         description: expense.description,
         type: expense.type,
         cost: expense.cost,
+        currency: expenseCurrency,
         date: new Date(expense.date).toISOString().split('T')[0],
         recurrenceCycle: expense.recurrenceCycle,
         recurrenceEndDate: expense.recurrenceEndDate
@@ -197,14 +203,15 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
         {/* Cost */}
         <div>
-          <NumberInput
+          <PriceInput
             label="Cost"
             value={formData.cost}
             onChange={(value) => setFormData({ ...formData, cost: value })}
-            placeholder="0.00"
-            min={0}
-            allowDecimals={true}
-            className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black text-black"
+            currency={costCurrency}
+            onCurrencyChange={(currency) => {
+              setCostCurrency(currency);
+              setFormData({ ...formData, currency });
+            }}
             required
           />
         </div>
