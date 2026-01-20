@@ -39,6 +39,7 @@ export default function ExpensesPage() {
       if (!token) return;
       
       const data = await expensesApi.getAll(token);
+      console.log('Loaded expenses:', data);
       setExpenses(data);
     } catch (error) {
       console.error('Failed to load expenses:', error);

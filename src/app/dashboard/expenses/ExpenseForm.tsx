@@ -91,11 +91,16 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           : undefined,
       };
 
+      console.log('Submitting expense with data:', dataToSubmit);
+
+      let result;
       if (expense) {
-        await expensesApi.update(expense.id, dataToSubmit, token);
+        result = await expensesApi.update(expense.id, dataToSubmit, token);
       } else {
-        await expensesApi.create(dataToSubmit, token);
+        result = await expensesApi.create(dataToSubmit, token);
       }
+      
+      console.log('Expense saved, response:', result);
 
       onSuccess();
     } catch (error) {
