@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Currency } from '../utils/currency';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -10,13 +11,13 @@ export interface Item {
   category?: string;
   unit: 'piece' | 'dozen' | 'box' | 'pack' | 'kg' | 'gram' | 'liter' | 'ml' | 'gallon' | 'cup' | 'tablespoon' | 'teaspoon' | 'ounce' | 'pound';
   purchasePrice?: number;
-  purchasePriceCurrency?: 'USD' | 'LBP';
+  purchasePriceCurrency?: Currency;
   sellingPrice?: number;
-  sellingPriceCurrency?: 'USD' | 'LBP';
+  sellingPriceCurrency?: Currency;
   laborCost: number;
-  laborCostCurrency: 'USD' | 'LBP';
+  laborCostCurrency: Currency;
   utilitiesCost: number;
-  utilitiesCostCurrency: 'USD' | 'LBP';
+  utilitiesCostCurrency: Currency;
   stockQuantity: number;
   recipeYield?: number;
   recipes?: Recipe[];
@@ -41,13 +42,13 @@ export interface CreateItemDto {
   category?: string;
   unit: 'piece' | 'dozen' | 'box' | 'pack' | 'kg' | 'gram' | 'liter' | 'ml' | 'gallon' | 'cup' | 'tablespoon' | 'teaspoon' | 'ounce' | 'pound';
   purchasePrice?: number;
-  purchasePriceCurrency?: 'USD' | 'LBP';
+  purchasePriceCurrency?: Currency;
   sellingPrice?: number;
-  sellingPriceCurrency?: 'USD' | 'LBP';
+  sellingPriceCurrency?: Currency;
   laborCost?: number;
-  laborCostCurrency?: 'USD' | 'LBP';
+  laborCostCurrency?: Currency;
   utilitiesCost?: number;
-  utilitiesCostCurrency?: 'USD' | 'LBP';
+  utilitiesCostCurrency?: Currency;
   stockQuantity?: number;
   recipeYield?: number;
 }
