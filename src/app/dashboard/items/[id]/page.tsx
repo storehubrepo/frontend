@@ -159,6 +159,7 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
         return;
       }
 
+      console.log('Updating item with data:', formData);
       await itemsApi.update(itemId, formData, token);
 
       // Update recipes if manufactured item
@@ -183,7 +184,9 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
       router.push('/dashboard/items');
     } catch (err: any) {
       console.error('Failed to update item:', err);
-      setError(err.message || 'Failed to update item');
+      console.error('Error response:', err?.response?.data);
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to update item';
+      setError(errorMessage);
       setSaving(false);
     }
   };
