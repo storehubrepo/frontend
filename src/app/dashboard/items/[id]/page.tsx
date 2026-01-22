@@ -23,6 +23,7 @@ interface RecipeIngredient {
 export default function ItemDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { currency } = useCurrency();
+  const [itemId, setItemId] = useState<string>('');
   const [item, setItem] = useState<Item | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,9 +44,20 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([]);
 
   useEffect(() => {
-    loadItem();
-    loadAvailableItems();
-  }, [params.id]);
+    // Handle params which might be a Promise in Next.js 15+
+    const resolveParams = async () => {
+      const resolvedParams = await Promise.resolve(params);
+      setItemId(resolvedParams.id);
+    };
+    resolveParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (itemId) {
+      loadItem();
+      loadAvailableItems();
+    }
+  }, [itemId]);
 
   const loadItem = async () => {
     try {
@@ -58,7 +70,7 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
         return;
       }
       
-      const foundItem = await itemsApi.getOne(params.id, token);
+      const foundItem = await itemsApi.getOne(itemId, token);
 
       if (!foundItem) {
         setError('Item not found');
@@ -81,7 +93,7 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
 
       // Load recipes if manufactured item
       if (foundItem.type === 'manufactured') {
-        const itemRecipes = await recipesApi.getByItem(params.id, token);
+        const itemRecipes = await recipesApi.getByItem(itemId, token);
         setRecipes(itemRecipes);
         
         // Convert recipes to ingredient format
@@ -143,7 +155,7 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
         return;
       }
 
-      await itemsApi.update(params.id, formData, token);
+      await itemsApi.update(itemId, formData, token);
 
       // Update recipes if manufactured item
       if (item?.type === 'manufactured') {
@@ -154,13 +166,13 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
 
         // Create new recipes
         const newRecipes = recipeIngredients.map(ing => ({
-          parentItemId: params.id,
+          parentItemId: itemId,
           childItemId: ing.ingredientId,
           quantityNeeded: ing.quantity,
         }));
 
         if (newRecipes.length > 0) {
-          await recipesApi.bulkCreate(params.id, newRecipes, token);
+          await recipesApi.bulkCreate(itemId, newRecipes, token);
         }
       }
 
@@ -194,7 +206,7 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
         }
       }
 
-      await itemsApi.delete(params.id, token);
+      await itemsApi.delete(itemId, token);
       router.push('/dashboard/items');
     } catch (err: any) {
       console.error('Failed to delete item:', err);
