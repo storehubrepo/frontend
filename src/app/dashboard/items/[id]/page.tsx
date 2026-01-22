@@ -159,8 +159,30 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
         return;
       }
 
-      console.log('Updating item with data:', formData);
-      await itemsApi.update(itemId, formData, token);
+      // Clean up formData - remove undefined values and ensure proper types
+      const cleanData: any = {};
+      Object.keys(formData).forEach(key => {
+        const value = formData[key as keyof typeof formData];
+        if (value !== undefined && value !== null && value !== '') {
+          cleanData[key] = value;
+        }
+      });
+
+      // For raw materials, ensure laborCost and utilitiesCost are not sent if not needed
+      if (item?.type === 'raw_material') {
+        delete cleanData.laborCost;
+        delete cleanData.laborCostCurrency;
+        delete cleanData.utilitiesCost;
+        delete cleanData.utilitiesCostCurrency;
+        delete cleanData.recipeYield;
+      } else {
+        // For manufactured items, ensure these are numbers
+        if (cleanData.laborCost === undefined) cleanData.laborCost = 0;
+        if (cleanData.utilitiesCost === undefined) cleanData.utilitiesCost = 0;
+      }
+
+      console.log('Updating item with data:', cleanData);
+      await itemsApi.update(itemId, cleanData, token);
 
       // Update recipes if manufactured item
       if (item?.type === 'manufactured') {
