@@ -500,10 +500,62 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               {item?.type === 'raw_material' && (
                 <div>
+                  <label style={{ 
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '500',
+                    color: '#000000',
+                  }}>
+                    Purchase Price
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <NumberInput
+                      value={formData.purchasePrice || 0}
+                      onChange={(value) => setFormData({ ...formData, purchasePrice: value })}
+                      min={0}
+                      allowDecimals={true}
+                      className="w-full"
+                      style={{
+                        padding: '0.75rem',
+                        border: `1px solid ${theme.colors.border}`,
+                        borderRadius: theme.borderRadius.sm,
+                        fontSize: '1rem',
+                        color: '#000000',
+                        flex: 1,
+                      }}
+                    />
+                    <select
+                      value={formData.purchasePriceCurrency || Currency.USD}
+                      onChange={(e) => setFormData({ ...formData, purchasePriceCurrency: e.target.value as Currency })}
+                      style={{
+                        padding: '0.75rem',
+                        border: `1px solid ${theme.colors.border}`,
+                        borderRadius: theme.borderRadius.sm,
+                        fontSize: '1rem',
+                        color: '#000000',
+                        width: '100px',
+                      }}
+                    >
+                      <option value="USD">USD</option>
+                      <option value="LBP">LBP</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label style={{ 
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: '500',
+                  color: '#000000',
+                }}>
+                  Selling Price
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <NumberInput
-                    label="Purchase Price"
-                    value={formData.purchasePrice || 0}
-                    onChange={(value) => setFormData({ ...formData, purchasePrice: value })}
+                    value={formData.sellingPrice || 0}
+                    onChange={(value) => setFormData({ ...formData, sellingPrice: value })}
                     min={0}
                     allowDecimals={true}
                     className="w-full"
@@ -513,65 +565,113 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
                       borderRadius: theme.borderRadius.sm,
                       fontSize: '1rem',
                       color: '#000000',
+                      flex: 1,
                     }}
                   />
+                  <select
+                    value={formData.sellingPriceCurrency || Currency.USD}
+                    onChange={(e) => setFormData({ ...formData, sellingPriceCurrency: e.target.value as Currency })}
+                    style={{
+                      padding: '0.75rem',
+                      border: `1px solid ${theme.colors.border}`,
+                      borderRadius: theme.borderRadius.sm,
+                      fontSize: '1rem',
+                      color: '#000000',
+                      width: '100px',
+                    }}
+                  >
+                    <option value="USD">USD</option>
+                    <option value="LBP">LBP</option>
+                  </select>
                 </div>
-              )}
-
-              <div>
-                <NumberInput
-                  label="Selling Price"
-                  value={formData.sellingPrice || 0}
-                  onChange={(value) => setFormData({ ...formData, sellingPrice: value })}
-                  min={0}
-                  allowDecimals={true}
-                  className="w-full"
-                  style={{
-                    padding: '0.75rem',
-                    border: `1px solid ${theme.colors.border}`,
-                    borderRadius: theme.borderRadius.sm,
-                    fontSize: '1rem',
-                    color: '#000000',
-                  }}
-                />
               </div>
 
               {item?.type === 'manufactured' && (
                 <>
                   <div>
-                    <NumberInput
-                      label="Labor Cost"
-                      value={formData.laborCost || 0}
-                      onChange={(value) => setFormData({ ...formData, laborCost: value })}
-                      min={0}
-                      allowDecimals={true}
-                      className="w-full"
-                      style={{
-                        padding: '0.75rem',
-                        border: `1px solid ${theme.colors.border}`,
-                        borderRadius: theme.borderRadius.sm,
-                        fontSize: '1rem',
-                        color: '#000000',
-                      }}
-                    />
+                    <label style={{ 
+                      display: 'block',
+                      marginBottom: '0.5rem',
+                      fontWeight: '500',
+                      color: '#000000',
+                    }}>
+                      Labor Cost
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <NumberInput
+                        value={formData.laborCost || 0}
+                        onChange={(value) => setFormData({ ...formData, laborCost: value })}
+                        min={0}
+                        allowDecimals={true}
+                        className="w-full"
+                        style={{
+                          padding: '0.75rem',
+                          border: `1px solid ${theme.colors.border}`,
+                          borderRadius: theme.borderRadius.sm,
+                          fontSize: '1rem',
+                          color: '#000000',
+                          flex: 1,
+                        }}
+                      />
+                      <select
+                        value={formData.laborCostCurrency || Currency.USD}
+                        onChange={(e) => setFormData({ ...formData, laborCostCurrency: e.target.value as Currency })}
+                        style={{
+                          padding: '0.75rem',
+                          border: `1px solid ${theme.colors.border}`,
+                          borderRadius: theme.borderRadius.sm,
+                          fontSize: '1rem',
+                          color: '#000000',
+                          width: '100px',
+                        }}
+                      >
+                        <option value="USD">USD</option>
+                        <option value="LBP">LBP</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div>
-                    <NumberInput
-                      label="Utilities Cost"
-                      value={formData.utilitiesCost || 0}
-                      onChange={(value) => setFormData({ ...formData, utilitiesCost: value })}
-                      min={0}
-                      allowDecimals={true}
-                      className="w-full"
-                      style={{
-                        padding: '0.75rem',
-                        border: `1px solid ${theme.colors.border}`,
-                        borderRadius: theme.borderRadius.sm,
-                        fontSize: '1rem',
-                        color: '#000000',
-                      }}
-                    />
+                    <label style={{ 
+                      display: 'block',
+                      marginBottom: '0.5rem',
+                      fontWeight: '500',
+                      color: '#000000',
+                    }}>
+                      Utilities Cost
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <NumberInput
+                        value={formData.utilitiesCost || 0}
+                        onChange={(value) => setFormData({ ...formData, utilitiesCost: value })}
+                        min={0}
+                        allowDecimals={true}
+                        className="w-full"
+                        style={{
+                          padding: '0.75rem',
+                          border: `1px solid ${theme.colors.border}`,
+                          borderRadius: theme.borderRadius.sm,
+                          fontSize: '1rem',
+                          color: '#000000',
+                          flex: 1,
+                        }}
+                      />
+                      <select
+                        value={formData.utilitiesCostCurrency || Currency.USD}
+                        onChange={(e) => setFormData({ ...formData, utilitiesCostCurrency: e.target.value as Currency })}
+                        style={{
+                          padding: '0.75rem',
+                          border: `1px solid ${theme.colors.border}`,
+                          borderRadius: theme.borderRadius.sm,
+                          fontSize: '1rem',
+                          color: '#000000',
+                          width: '100px',
+                        }}
+                      >
+                        <option value="USD">USD</option>
+                        <option value="LBP">LBP</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div>
