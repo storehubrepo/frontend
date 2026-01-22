@@ -56,14 +56,8 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
         setLoading(false);
         return;
       }
-      const items = await itemsApi.getAll(token);
-      const foundItem = items.find(i => i.id === params.id);
       
-      if (!foundItem) {
-        setError('Item not found');
-        setLoading(false);
-        return;
-      }
+      const foundItem = await itemsApi.getOne(params.id, token);
 
       setItem(foundItem);
       setFormData({
@@ -86,7 +80,7 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
         // Convert recipes to ingredient format
         const ingredients = await Promise.all(
           itemRecipes.map(async (recipe) => {
-            const childItem = (await itemsApi.getAll(token)).find(i => i.id === recipe.childItemId);
+            const childItem = await itemsApi.getOne(recipe.childItemId, token);
             return {
               ingredientId: recipe.childItemId,
               ingredientName: childItem?.name || 'Unknown',
