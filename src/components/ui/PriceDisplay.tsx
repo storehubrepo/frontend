@@ -25,7 +25,7 @@ export function PriceDisplay({
 
   return (
     <div className={className}>
-      <span className="font-medium">{formattedPrice}</span>
+      <span className="font-medium text-black">{formattedPrice}</span>
       {showOriginal && displayCurrency !== currency && (
         <span className="text-xs text-gray-500 ml-2">
           ({formatPrice(amount, currency)})

@@ -256,7 +256,7 @@ export default function ItemsPage() {
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-black">Stock:</span>
-                    <span className="font-semibold">{formatNumberWithCommas(Number(item.stockQuantity))} {item.unit}</span>
+                    <span className="font-semibold text-black">{formatNumberWithCommas(Number(item.stockQuantity))} {item.unit}</span>
                   </div>
                 </div>
 

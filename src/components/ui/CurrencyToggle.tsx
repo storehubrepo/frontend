@@ -14,8 +14,8 @@ export function CurrencyToggle() {
       variant="outline"
       className="flex items-center gap-2"
     >
-      <span className="font-semibold">{getCurrencySymbol(currency)}</span>
-      <span className="text-sm">
+      <span className="font-semibold text-gray-400">{getCurrencySymbol(currency)}</span>
+      <span className="text-sm text-gray-400">
         {currency === Currency.USD ? 'USD' : 'LBP'}
       </span>
     </Button>
