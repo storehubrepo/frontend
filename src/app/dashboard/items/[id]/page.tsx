@@ -163,7 +163,20 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
       const cleanData: any = {};
       Object.keys(formData).forEach(key => {
         const value = formData[key as keyof typeof formData];
-        if (value !== undefined && value !== null && value !== '') {
+        
+        // Skip undefined, null, and empty strings
+        if (value === undefined || value === null || value === '') {
+          return;
+        }
+        
+        // Convert string numbers to actual numbers for price fields
+        if (key === 'purchasePrice' || key === 'sellingPrice' || key === 'laborCost' || key === 'utilitiesCost' || key === 'recipeYield') {
+          const numValue = typeof value === 'string' ? parseFloat(value) : Number(value);
+          // Only add if it's a valid number
+          if (!isNaN(numValue)) {
+            cleanData[key] = numValue;
+          }
+        } else {
           cleanData[key] = value;
         }
       });
@@ -176,9 +189,13 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
         delete cleanData.utilitiesCostCurrency;
         delete cleanData.recipeYield;
       } else {
-        // For manufactured items, ensure these are numbers
-        if (cleanData.laborCost === undefined) cleanData.laborCost = 0;
-        if (cleanData.utilitiesCost === undefined) cleanData.utilitiesCost = 0;
+        // For manufactured items, ensure these are numbers with defaults
+        if (!cleanData.laborCost || isNaN(cleanData.laborCost)) {
+          cleanData.laborCost = 0;
+        }
+        if (!cleanData.utilitiesCost || isNaN(cleanData.utilitiesCost)) {
+          cleanData.utilitiesCost = 0;
+        }
       }
 
       console.log('Updating item with data:', cleanData);
