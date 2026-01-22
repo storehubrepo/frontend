@@ -85,9 +85,13 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
         category: foundItem.category,
         unit: foundItem.unit,
         purchasePrice: foundItem.purchasePrice,
+        purchasePriceCurrency: foundItem.purchasePriceCurrency,
         sellingPrice: foundItem.sellingPrice,
+        sellingPriceCurrency: foundItem.sellingPriceCurrency,
         laborCost: foundItem.laborCost || 0,
+        laborCostCurrency: foundItem.laborCostCurrency,
         utilitiesCost: foundItem.utilitiesCost || 0,
+        utilitiesCostCurrency: foundItem.utilitiesCostCurrency,
         recipeYield: foundItem.recipeYield,
       });
 
