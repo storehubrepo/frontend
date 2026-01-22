@@ -265,7 +265,7 @@ export default function ItemsPage() {
                     onClick={() => router.push(`/dashboard/items/${item.id}`)}
                     className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
                   >
-                    View
+                    Edit
                   </button>
                   {item.type === 'manufactured' && (
                     <button

@@ -7,7 +7,10 @@ import { recipesApi, Recipe } from '@/lib/api/items';
 import { getAuthToken } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
 import { NumberInput } from '@/components/ui/NumberInput';
+import { PriceDisplay } from '@/components/ui/PriceDisplay';
 import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
+import { Currency, convertCurrency } from '@/lib/utils/currency';
+import { useCurrency } from '@/lib/context/CurrencyContext';
 import theme from '@/styles/theme';
 
 interface RecipeIngredient {
@@ -19,6 +22,7 @@ interface RecipeIngredient {
 
 export default function ItemDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const { currency } = useCurrency();
   const [item, setItem] = useState<Item | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
@@ -211,7 +215,9 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
     return recipeIngredients.reduce((total, ing) => {
       const ingredient = availableItems.find(item => item.id === ing.ingredientId);
       const ingredientCost = ingredient?.purchasePrice || 0;
-      return total + (ingredientCost * ing.quantity);
+      const ingredientCurrency = ingredient?.purchasePriceCurrency || Currency.USD;
+      const convertedCost = convertCurrency(ingredientCost * ing.quantity, ingredientCurrency, currency);
+      return total + convertedCost;
     }, 0);
   };
 
@@ -600,14 +606,16 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
                   <div style={{ display: 'grid', gap: '0.5rem', fontSize: '0.9rem' }}>
                     {recipeIngredients.map((ing) => {
                       const ingredient = availableItems.find(item => item.id === ing.ingredientId);
-                      const ingredientCost = (ingredient?.purchasePrice || 0) * ing.quantity;
+                      const ingredientPrice = ingredient?.purchasePrice || 0;
+                      const ingredientCurrency = ingredient?.purchasePriceCurrency || Currency.USD;
+                      const ingredientCost = ingredientPrice * ing.quantity;
                       return (
                         <div key={ing.ingredientId} style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <span style={{ color: theme.colors.text.secondary }}>
-                            {ing.ingredientName}: {formatNumberWithCommas(ing.quantity)} {ing.unit} × ${formatNumberWithCommas(ingredient?.purchasePrice || 0)}
+                            {ing.ingredientName}: {formatNumberWithCommas(ing.quantity)} {ing.unit} × <PriceDisplay amount={ingredientPrice} currency={ingredientCurrency} />
                           </span>
                           <span style={{ fontWeight: '600', color: '#000000' }}>
-                            ${formatNumberWithCommas(ingredientCost)}
+                            <PriceDisplay amount={ingredientCost} currency={ingredientCurrency} />
                           </span>
                         </div>
                       );
@@ -615,32 +623,41 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
                     <div style={{ borderTop: `1px solid ${theme.colors.border}`, paddingTop: '0.5rem', marginTop: '0.5rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
                         <span style={{ color: '#000000' }}>Total Recipe Cost:</span>
-                        <span style={{ color: '#000000' }}>${formatNumberWithCommas(calculateRecipeCost())}</span>
+                        <span style={{ color: '#000000' }}>
+                          <PriceDisplay amount={calculateRecipeCost()} currency={currency} />
+                        </span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginTop: '0.5rem', color: theme.colors.accent.green }}>
                         <span>Cost Per Unit (÷ {formData.recipeYield || 1}):</span>
-                        <span>${formatNumberWithCommas(calculateCostPerUnit())}</span>
+                        <span><PriceDisplay amount={calculateCostPerUnit()} currency={currency} /></span>
                       </div>
                       {formData.sellingPrice && (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem' }}>
                             <span style={{ color: theme.colors.text.secondary }}>Selling Price:</span>
-                            <span style={{ color: '#000000' }}>${formatNumberWithCommas(formData.sellingPrice)}</span>
+                            <span style={{ color: '#000000' }}>
+                              <PriceDisplay amount={formData.sellingPrice} currency={item?.sellingPriceCurrency || Currency.USD} />
+                            </span>
                           </div>
                           <div style={{ 
                             display: 'flex', 
                             justifyContent: 'space-between', 
                             fontWeight: 'bold', 
                             marginTop: '0.5rem',
-                            color: formData.sellingPrice > calculateCostPerUnit() ? theme.colors.accent.green : theme.colors.accent.red
+                            color: convertCurrency(formData.sellingPrice, item?.sellingPriceCurrency || Currency.USD, currency) > calculateCostPerUnit() ? theme.colors.accent.green : theme.colors.accent.red
                           }}>
                             <span>Profit Per Unit:</span>
-                            <span>${formatNumberWithCommas(formData.sellingPrice - calculateCostPerUnit())}</span>
+                            <span>
+                              <PriceDisplay 
+                                amount={convertCurrency(formData.sellingPrice, item?.sellingPriceCurrency || Currency.USD, currency) - calculateCostPerUnit()} 
+                                currency={currency} 
+                              />
+                            </span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginTop: '0.25rem' }}>
                             <span style={{ color: theme.colors.text.secondary }}>Profit Margin:</span>
                             <span style={{ color: theme.colors.text.secondary }}>
-                              {((((formData.sellingPrice - calculateCostPerUnit()) / formData.sellingPrice) * 100) || 0).toFixed(1)}%
+                              {((((convertCurrency(formData.sellingPrice, item?.sellingPriceCurrency || Currency.USD, currency) - calculateCostPerUnit()) / convertCurrency(formData.sellingPrice, item?.sellingPriceCurrency || Currency.USD, currency)) * 100) || 0).toFixed(1)}%
                             </span>
                           </div>
                         </>
