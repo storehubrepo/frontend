@@ -50,6 +50,7 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
   const loadItem = async () => {
     try {
       setLoading(true);
+      setError('');
       const token = getAuthToken();
       if (!token) {
         setError('Not authenticated');
@@ -58,6 +59,12 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
       }
       
       const foundItem = await itemsApi.getOne(params.id, token);
+
+      if (!foundItem) {
+        setError('Item not found');
+        setLoading(false);
+        return;
+      }
 
       setItem(foundItem);
       setFormData({
@@ -80,22 +87,33 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
         // Convert recipes to ingredient format
         const ingredients = await Promise.all(
           itemRecipes.map(async (recipe) => {
-            const childItem = await itemsApi.getOne(recipe.childItemId, token);
-            return {
-              ingredientId: recipe.childItemId,
-              ingredientName: childItem?.name || 'Unknown',
-              quantity: recipe.quantityNeeded,
-              unit: childItem?.unit || 'piece',
-            };
+            try {
+              const childItem = await itemsApi.getOne(recipe.childItemId, token);
+              return {
+                ingredientId: recipe.childItemId,
+                ingredientName: childItem?.name || 'Unknown',
+                quantity: recipe.quantityNeeded,
+                unit: childItem?.unit || 'piece',
+              };
+            } catch (err) {
+              console.error(`Failed to load child item ${recipe.childItemId}:`, err);
+              return {
+                ingredientId: recipe.childItemId,
+                ingredientName: 'Unknown',
+                quantity: recipe.quantityNeeded,
+                unit: 'piece',
+              };
+            }
           })
         );
         setRecipeIngredients(ingredients);
       }
 
       setLoading(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load item:', err);
-      setError('Failed to load item');
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to load item';
+      setError(errorMessage);
       setLoading(false);
     }
   };
