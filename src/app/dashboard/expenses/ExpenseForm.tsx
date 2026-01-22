@@ -56,6 +56,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         isActive: expense.isActive,
         notes: expense.notes || '',
       });
+    } else {
+      // Sync initial currency state
+      setCostCurrency(Currency.USD);
+      setFormData(prev => ({ ...prev, currency: Currency.USD }));
     }
   }, [expense]);
 
@@ -212,7 +216,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             label="Cost"
             value={formData.cost}
             onChange={(value) => setFormData({ ...formData, cost: value })}
-            currency={costCurrency}
+            currency={formData.currency || Currency.USD}
             onCurrencyChange={(currency) => {
               setCostCurrency(currency);
               setFormData({ ...formData, currency });

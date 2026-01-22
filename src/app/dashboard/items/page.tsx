@@ -6,10 +6,14 @@ import { itemsApi, Item } from '@/lib/api/items';
 import { getAuthToken } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
 import { formatCurrency, formatNumberWithCommas } from '@/lib/utils/numberFormat';
+import { PriceDisplay } from '@/components/ui/PriceDisplay';
+import { Currency, convertCurrency } from '@/lib/utils/currency';
+import { useCurrency } from '@/lib/context/CurrencyContext';
 import theme from '@/styles/theme';
 
 export default function ItemsPage() {
   const router = useRouter();
+  const { currency } = useCurrency();
   const [items, setItems] = useState<Item[]>([]);
   const [filter, setFilter] = useState<'all' | 'raw_material' | 'manufactured'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -50,7 +54,10 @@ export default function ItemsPage() {
     }
     const totalCost = item.recipes.reduce((sum, recipe) => {
       const ingredientCost = recipe.childItem?.purchasePrice || 0;
-      return sum + (ingredientCost * recipe.quantityNeeded);
+      const ingredientCurrency = recipe.childItem?.purchasePriceCurrency || Currency.USD;
+      // Convert to selected currency
+      const convertedCost = convertCurrency(ingredientCost, ingredientCurrency, currency);
+      return sum + (convertedCost * recipe.quantityNeeded);
     }, 0);
     const yield_ = item.recipeYield || 1;
     return totalCost / yield_;
@@ -203,7 +210,12 @@ export default function ItemsPage() {
                   {item.type === 'raw_material' && item.purchasePrice && (
                     <div className="flex justify-between text-sm">
                       <span className="text-black">Purchase Price:</span>
-                      <span className="font-semibold">{formatCurrency(item.purchasePrice)}</span>
+                      <span className="font-semibold">
+                        <PriceDisplay 
+                          amount={item.purchasePrice} 
+                          currency={item.purchasePriceCurrency || Currency.USD}
+                        />
+                      </span>
                     </div>
                   )}
                   {item.type === 'manufactured' && (
@@ -211,20 +223,30 @@ export default function ItemsPage() {
                       {item.recipes && item.recipes.length > 0 && (
                         <div className="flex justify-between text-sm">
                           <span className="text-black">Cost per Unit:</span>
-                          <span className="font-semibold text-blue-600">{formatCurrency(calculateCostPerUnit(item))}</span>
+                          <span className="font-semibold text-blue-600">
+                            <PriceDisplay amount={calculateCostPerUnit(item)} currency={currency} />
+                          </span>
                         </div>
                       )}
                       {item.sellingPrice && (
                         <>
                           <div className="flex justify-between text-sm">
                             <span className="text-black">Selling Price:</span>
-                            <span className="font-semibold">{formatCurrency(item.sellingPrice)}</span>
+                            <span className="font-semibold">
+                              <PriceDisplay 
+                                amount={item.sellingPrice} 
+                                currency={item.sellingPriceCurrency || Currency.USD}
+                              />
+                            </span>
                           </div>
                           {item.recipes && item.recipes.length > 0 && (
                             <div className="flex justify-between text-sm">
                               <span className="text-black">Profit per Unit:</span>
-                              <span className={`font-semibold ${item.sellingPrice > calculateCostPerUnit(item) ? 'text-green-600' : 'text-red-600'}`}>
-                                {formatCurrency(item.sellingPrice - calculateCostPerUnit(item))}
+                              <span className={`font-semibold ${convertCurrency(item.sellingPrice, item.sellingPriceCurrency || Currency.USD, currency) > calculateCostPerUnit(item) ? 'text-green-600' : 'text-red-600'}`}>
+                                <PriceDisplay 
+                                  amount={convertCurrency(item.sellingPrice, item.sellingPriceCurrency || Currency.USD, currency) - calculateCostPerUnit(item)} 
+                                  currency={currency}
+                                />
                               </span>
                             </div>
                           )}
