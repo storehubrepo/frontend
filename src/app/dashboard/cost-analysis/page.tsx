@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { itemsApi, Item, Recipe } from '@/lib/api/items';
 import { getAuthToken } from '@/lib/auth';
+import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
 import theme from '@/styles/theme';
 
 interface CostBreakdown {
@@ -274,12 +275,12 @@ export default function CostAnalysisPage() {
               Total Production Cost
             </h3>
             <p className="text-3xl font-bold" style={{ color: theme.colors.accent.red }}>
-              ${totals.totalCost.toFixed(2)}
+              ${formatNumberWithCommas(totals.totalCost)}
             </p>
             <div className="mt-3 space-y-1 text-sm" style={{ color: '#000000' }}>
-              <div>Materials: ${totals.totalMaterialCost.toFixed(2)}</div>
-              <div>Labor: ${totals.totalLaborCost.toFixed(2)}</div>
-              <div>Utilities: ${totals.totalUtilitiesCost.toFixed(2)}</div>
+              <div>Materials: ${formatNumberWithCommas(totals.totalMaterialCost)}</div>
+              <div>Labor: ${formatNumberWithCommas(totals.totalLaborCost)}</div>
+              <div>Utilities: ${formatNumberWithCommas(totals.totalUtilitiesCost)}</div>
             </div>
           </div>
 
@@ -295,7 +296,7 @@ export default function CostAnalysisPage() {
               Potential Revenue
             </h3>
             <p className="text-3xl font-bold" style={{ color: theme.colors.accent.blue }}>
-              ${totals.totalRevenue.toFixed(2)}
+              ${formatNumberWithCommas(totals.totalRevenue)}
             </p>
             <div className="mt-3 text-sm" style={{ color: '#000000' }}>
               Based on current selling prices
@@ -314,10 +315,10 @@ export default function CostAnalysisPage() {
               Expected Profit
             </h3>
             <p className="text-3xl font-bold" style={{ color: theme.colors.accent.green }}>
-              ${totals.totalProfit.toFixed(2)}
+              ${formatNumberWithCommas(totals.totalProfit)}
             </p>
             <div className="mt-3 text-sm" style={{ color: '#000000' }}>
-              Average Margin: {totals.totalRevenue > 0 ? ((totals.totalProfit / totals.totalRevenue) * 100).toFixed(1) : 0}%
+              Average Margin: {totals.totalRevenue > 0 ? formatNumberWithCommas((totals.totalProfit / totals.totalRevenue) * 100, 1) : 0}%
             </div>
           </div>
         </div>
@@ -390,19 +391,19 @@ export default function CostAnalysisPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4" style={{ color: theme.colors.accent.blue }}>
-                        ${breakdown.materialCost.toFixed(2)}
+                        ${formatNumberWithCommas(breakdown.materialCost)}
                       </td>
                       <td className="px-6 py-4" style={{ color: theme.colors.accent.purple }}>
-                        ${breakdown.laborCost.toFixed(2)}
+                        ${formatNumberWithCommas(breakdown.laborCost)}
                       </td>
                       <td className="px-6 py-4" style={{ color: theme.colors.accent.yellow }}>
-                        ${breakdown.utilitiesCost.toFixed(2)}
+                        ${formatNumberWithCommas(breakdown.utilitiesCost)}
                       </td>
                       <td className="px-6 py-4 font-bold" style={{ color: '#000000' }}>
-                        ${breakdown.totalCost.toFixed(2)}
+                        ${formatNumberWithCommas(breakdown.totalCost)}
                       </td>
                       <td className="px-6 py-4" style={{ color: '#000000' }}>
-                        ${breakdown.sellingPrice.toFixed(2)}
+                        ${formatNumberWithCommas(breakdown.sellingPrice)}
                       </td>
                       <td
                         className="px-6 py-4 font-bold"
@@ -410,7 +411,7 @@ export default function CostAnalysisPage() {
                           color: breakdown.profit >= 0 ? theme.colors.accent.green : theme.colors.accent.red,
                         }}
                       >
-                        ${breakdown.profit.toFixed(2)}
+                        ${formatNumberWithCommas(breakdown.profit)}
                       </td>
                       <td
                         className="px-6 py-4 font-bold"
@@ -418,7 +419,7 @@ export default function CostAnalysisPage() {
                           color: breakdown.marginPercent >= 0 ? theme.colors.accent.green : theme.colors.accent.red,
                         }}
                       >
-                        {breakdown.marginPercent.toFixed(1)}%
+                        {formatNumberWithCommas(breakdown.marginPercent, 1)}%
                       </td>
                     </tr>
                   ))
@@ -453,11 +454,11 @@ export default function CostAnalysisPage() {
                       {ingredient.name}
                     </div>
                     <div className="text-sm" style={{ color: '#000000' }}>
-                      {ingredient.quantity} {ingredient.unit} × ${ingredient.costPerUnit.toFixed(2)}/{ingredient.unit}
+                      {ingredient.quantity} {ingredient.unit} × ${formatNumberWithCommas(ingredient.costPerUnit)}/{ingredient.unit}
                     </div>
                   </div>
                   <div className="font-bold text-lg" style={{ color: theme.colors.accent.green }}>
-                    ${ingredient.totalCost.toFixed(2)}
+                    ${formatNumberWithCommas(ingredient.totalCost)}
                   </div>
                 </div>
               ))}

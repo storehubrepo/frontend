@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { analyticsApi, AnalyticsSummary } from '@/lib/api/analytics';
 import { getAuthToken } from '@/lib/auth';
 import { expensesApi } from '@/lib/api/expenses';
+import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
 import theme from '@/styles/theme';
 
 export default function AnalyticsPage() {
@@ -173,7 +174,7 @@ export default function AnalyticsPage() {
               </svg>
             </div>
             <h3 className="text-sm opacity-90 mb-1">Stock Value</h3>
-            <p className="text-4xl font-bold">${data.totalStockValue.toFixed(0)}</p>
+            <p className="text-4xl font-bold">${formatNumberWithCommas(data.totalStockValue, 0)}</p>
           </div>
 
           <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
@@ -184,7 +185,7 @@ export default function AnalyticsPage() {
               </svg>
             </div>
             <h3 className="text-sm opacity-90 mb-1">Net Profit</h3>
-            <p className="text-4xl font-bold">${data.netProfit.toFixed(0)}</p>
+            <p className="text-4xl font-bold">${formatNumberWithCommas(data.netProfit, 0)}</p>
           </div>
 
           <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-6 text-white shadow-xl">
@@ -206,11 +207,11 @@ export default function AnalyticsPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center pb-4 border-b border-gray-200">
                 <span style={{ color: theme.colors.text.secondary }}>Total Revenue</span>
-                <span className="text-2xl font-bold text-green-600">${data.totalRevenue.toFixed(2)}</span>
+                <span className="text-2xl font-bold text-green-600">${formatNumberWithCommas(data.totalRevenue)}</span>
               </div>
               <div className="flex justify-between items-center pb-4 border-b border-gray-200">
                 <span style={{ color: theme.colors.text.secondary }}>Total Costs</span>
-                <span className="text-2xl font-bold text-red-600">${data.totalCosts.toFixed(2)}</span>
+                <span className="text-2xl font-bold text-red-600">${formatNumberWithCommas(data.totalCosts)}</span>
               </div>
               {data.operatingExpenses !== undefined && (
                 <div className="flex justify-between items-center pb-4 border-b border-gray-200">
@@ -220,16 +221,16 @@ export default function AnalyticsPage() {
                       This Month
                     </span>
                   </div>
-                  <span className="text-2xl font-bold text-orange-600">${data.operatingExpenses.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-orange-600">${formatNumberWithCommas(data.operatingExpenses)}</span>
                 </div>
               )}
               <div className="flex justify-between items-center pb-4 border-b border-gray-200">
                 <span style={{ color: theme.colors.text.secondary }}>Net Profit</span>
-                <span className="text-2xl font-bold text-purple-600">${data.netProfit.toFixed(2)}</span>
+                <span className="text-2xl font-bold text-purple-600">${formatNumberWithCommas(data.netProfit)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span style={{ color: theme.colors.text.secondary }}>Profit Margin</span>
-                <span className="text-2xl font-bold text-blue-600">{data.profitMargin.toFixed(1)}%</span>
+                <span className="text-2xl font-bold text-blue-600">{formatNumberWithCommas(data.profitMargin, 1)}%</span>
               </div>
             </div>
           </div>
@@ -250,7 +251,7 @@ export default function AnalyticsPage() {
                     </div>
                     <div className="flex-1">
                       <p className="font-semibold" style={{ color: theme.colors.text.primary }}>{item.itemName}</p>
-                      <p className="text-sm" style={{ color: theme.colors.text.secondary }}>{item.totalSold.toFixed(0)} units sold</p>
+                      <p className="text-sm" style={{ color: theme.colors.text.secondary }}>{formatNumberWithCommas(item.totalSold, 0)} units sold</p>
                     </div>
                   </div>
                 ))
@@ -290,16 +291,16 @@ export default function AnalyticsPage() {
                   data.costBreakdown.map((item) => (
                     <tr key={item.itemId} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 font-medium" style={{ color: theme.colors.text.primary }}>{item.itemName}</td>
-                      <td className="px-6 py-4" style={{ color: theme.colors.text.secondary }}>${item.materialCost.toFixed(2)}</td>
-                      <td className="px-6 py-4" style={{ color: theme.colors.text.secondary }}>${item.laborCost.toFixed(2)}</td>
-                      <td className="px-6 py-4" style={{ color: theme.colors.text.secondary }}>${item.utilitiesCost.toFixed(2)}</td>
-                      <td className="px-6 py-4 font-semibold" style={{ color: theme.colors.text.primary }}>${item.totalCost.toFixed(2)}</td>
-                      <td className="px-6 py-4" style={{ color: theme.colors.text.secondary }}>${item.sellingPrice.toFixed(2)}</td>
+                      <td className="px-6 py-4" style={{ color: theme.colors.text.secondary }}>${formatNumberWithCommas(item.materialCost)}</td>
+                      <td className="px-6 py-4" style={{ color: theme.colors.text.secondary }}>${formatNumberWithCommas(item.laborCost)}</td>
+                      <td className="px-6 py-4" style={{ color: theme.colors.text.secondary }}>${formatNumberWithCommas(item.utilitiesCost)}</td>
+                      <td className="px-6 py-4 font-semibold" style={{ color: theme.colors.text.primary }}>${formatNumberWithCommas(item.totalCost)}</td>
+                      <td className="px-6 py-4" style={{ color: theme.colors.text.secondary }}>${formatNumberWithCommas(item.sellingPrice)}</td>
                       <td className="px-6 py-4">
                         <span style={{
                           color: item.profitMargin >= 0 ? theme.colors.accent.green : theme.colors.accent.red
                         }} className="font-semibold">
-                          ${item.profitMargin.toFixed(2)}
+                          ${formatNumberWithCommas(item.profitMargin)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -315,7 +316,7 @@ export default function AnalyticsPage() {
                             ? theme.colors.accent.yellow
                             : theme.colors.accent.red,
                         }} className="px-3 py-1 rounded-full text-sm font-medium">
-                          {item.profitPercentage.toFixed(1)}%
+                          {formatNumberWithCommas(item.profitPercentage, 1)}%
                         </span>
                       </td>
                     </tr>

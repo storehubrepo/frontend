@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { itemsApi, Item } from '@/lib/api/items';
 import { stockMovementsApi } from '@/lib/api/stock-movements';
 import { getAuthToken } from '@/lib/auth';
+import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
 import theme from '@/styles/theme';
 
 interface CartItem {
@@ -235,11 +236,11 @@ ITEMS
 
 ${cart.items.map(item => `
 ${item.item.name}
-  ${item.quantity} x $${Number(item.item.sellingPrice || 0).toFixed(2)} = $${(item.quantity * Number(item.item.sellingPrice || 0)).toFixed(2)}
+  ${item.quantity} x $${formatNumberWithCommas(Number(item.item.sellingPrice || 0))} = $${formatNumberWithCommas(item.quantity * Number(item.item.sellingPrice || 0))}
 `).join('')}
 
 ───────────────────────────────────
-TOTAL: $${getCartTotal(cart).toFixed(2)}
+TOTAL: $${formatNumberWithCommas(getCartTotal(cart))}
 ═══════════════════════════════════
 
 Thank you for your business!
@@ -489,10 +490,10 @@ Thank you for your business!
                           </div>
                           <div className="text-right">
                             <div className="text-sm" style={{ color: '#000000' }}>
-                              ${Number(cartItem.item.sellingPrice || 0).toFixed(2)} each
+                              ${formatNumberWithCommas(Number(cartItem.item.sellingPrice || 0))} each
                             </div>
                             <div className="font-bold" style={{ color: theme.colors.accent.green }}>
-                              ${(cartItem.quantity * Number(cartItem.item.sellingPrice || 0)).toFixed(2)}
+                              ${formatNumberWithCommas(cartItem.quantity * Number(cartItem.item.sellingPrice || 0))}
                             </div>
                           </div>
                         </div>
@@ -511,7 +512,7 @@ Thank you for your business!
                       Total
                     </span>
                     <span className="text-2xl font-bold" style={{ color: theme.colors.accent.green }}>
-                      ${getCartTotal(activeCart).toFixed(2)}
+                      ${formatNumberWithCommas(getCartTotal(activeCart))}
                     </span>
                   </div>
                 </div>
@@ -810,7 +811,7 @@ Thank you for your business!
                       }}
                     >
                       {Number(product.stockQuantity || 0) > 0 
-                        ? `${Number(product.stockQuantity || 0).toFixed(0)} ${product.unit} in stock`
+                        ? `${formatNumberWithCommas(Number(product.stockQuantity || 0), 0)} ${product.unit} in stock`
                         : 'Out of stock'}
                     </div>
                   </div>
@@ -822,14 +823,14 @@ Thank you for your business!
                         <div className="flex justify-between text-xs">
                           <span style={{ color: theme.colors.text.secondary }}>Cost per Unit:</span>
                           <span className="font-semibold" style={{ color: theme.colors.accent.blue }}>
-                            ${calculateCostPerUnit(product).toFixed(2)}
+                            ${formatNumberWithCommas(calculateCostPerUnit(product))}
                           </span>
                         </div>
                         {product.sellingPrice && (
                           <div className="flex justify-between text-xs">
                             <span style={{ color: theme.colors.text.secondary }}>Profit per Unit:</span>
                             <span className="font-semibold" style={{ color: theme.colors.accent.green }}>
-                              ${(Number(product.sellingPrice) - calculateCostPerUnit(product)).toFixed(2)}
+                              ${formatNumberWithCommas(Number(product.sellingPrice) - calculateCostPerUnit(product))}
                             </span>
                           </div>
                         )}
@@ -837,7 +838,7 @@ Thank you for your business!
                     )}
                     <div className="flex items-center justify-between">
                       <div className="text-2xl font-bold" style={{ color: theme.colors.accent.green }}>
-                        ${Number(product.sellingPrice || 0).toFixed(2)}
+                        ${formatNumberWithCommas(Number(product.sellingPrice || 0))}
                       </div>
                       <div 
                         className="text-xs font-semibold px-3 py-1 rounded-full"

@@ -42,17 +42,20 @@ export function formatPrice(
   currency: Currency,
   locale: string = 'en-US',
 ): string {
+  // Check if number is an integer
+  const isInteger = Number.isInteger(amount);
+  
   if (currency === Currency.USD) {
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 2,
+      minimumFractionDigits: isInteger ? 0 : 2,
       maximumFractionDigits: 2,
     }).format(amount);
   } else {
     // LBP - display with custom formatting
     const formatted = new Intl.NumberFormat(locale, {
-      minimumFractionDigits: 2,
+      minimumFractionDigits: isInteger ? 0 : 2,
       maximumFractionDigits: 2,
     }).format(amount);
     return `${formatted} LBP`;

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { stockMovementsApi, StockMovement } from '@/lib/api/stock-movements';
 import { itemsApi, Item } from '@/lib/api/items';
 import { getAuthToken } from '@/lib/auth';
+import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
 import theme from '@/styles/theme';
 
 type TimeFilter = 'day' | 'week' | 'month' | 'year';
@@ -135,8 +136,8 @@ export default function SalesAnalyticsPage() {
 
     const chartArray = Object.entries(grouped).map(([date, data]) => ({
       date,
-      sales: Number(data.sales.toFixed(2)),
-      quantity: Number(data.quantity.toFixed(2)),
+      sales: Number(formatNumberWithCommas(data.sales).replace(/,/g, '')),
+      quantity: Number(formatNumberWithCommas(data.quantity).replace(/,/g, '')),
     }));
 
     setChartData(chartArray);
@@ -483,7 +484,7 @@ export default function SalesAnalyticsPage() {
               >
                 <div className="text-white">
                   <p className="text-sm opacity-90 mb-2">Total Sales</p>
-                  <p className="text-4xl font-bold">${totalSales.toFixed(2)}</p>
+                  <p className="text-4xl font-bold">${formatNumberWithCommas(totalSales)}</p>
                 </div>
               </div>
               
@@ -496,7 +497,7 @@ export default function SalesAnalyticsPage() {
               >
                 <div className="text-white">
                   <p className="text-sm opacity-90 mb-2">Total Items Sold</p>
-                  <p className="text-4xl font-bold">{totalQuantity.toFixed(0)}</p>
+                  <p className="text-4xl font-bold">{formatNumberWithCommas(totalQuantity, 0)}</p>
                 </div>
               </div>
               
@@ -510,7 +511,7 @@ export default function SalesAnalyticsPage() {
                 <div className="text-white">
                   <p className="text-sm opacity-90 mb-2">Average Sale</p>
                   <p className="text-4xl font-bold">
-                    ${chartData.length > 0 ? (totalSales / chartData.length).toFixed(2) : '0.00'}
+                    ${chartData.length > 0 ? formatNumberWithCommas(totalSales / chartData.length) : '0'}
                   </p>
                 </div>
               </div>
@@ -542,7 +543,7 @@ export default function SalesAnalyticsPage() {
                           {item.date}
                         </span>
                         <span className="font-bold" style={{ color: theme.colors.accent.green }}>
-                          ${item.sales.toFixed(2)}
+                          ${formatNumberWithCommas(item.sales)}
                         </span>
                       </div>
                       <div
@@ -589,7 +590,7 @@ export default function SalesAnalyticsPage() {
                           {item.date}
                         </span>
                         <span className="font-bold" style={{ color: theme.colors.accent.blue }}>
-                          {item.quantity.toFixed(0)} items
+                          {formatNumberWithCommas(item.quantity, 0)} items
                         </span>
                       </div>
                       <div

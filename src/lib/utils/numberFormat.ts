@@ -5,16 +5,34 @@
 /**
  * Format a number with thousand separators for display
  * @param value - The number to format
- * @param decimals - Number of decimal places (default: 2)
+ * @param decimals - Number of decimal places (default: auto - no decimals for integers, decimals for floats)
  * @returns Formatted string with thousand separators
  */
-export const formatNumberWithCommas = (value: number | string | undefined, decimals: number = 2): string => {
+export const formatNumberWithCommas = (value: number | string | undefined, decimals?: number): string => {
   if (value === undefined || value === null || value === '') return '0';
   
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
   
   if (isNaN(numValue)) return '0';
   
+  // If decimals not specified, auto-detect
+  if (decimals === undefined) {
+    // Check if number is an integer
+    if (Number.isInteger(numValue)) {
+      return new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(numValue);
+    } else {
+      // For non-integers, show up to 2 decimal places but remove trailing zeros
+      return new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(numValue);
+    }
+  }
+  
+  // If decimals specified, use that value
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,

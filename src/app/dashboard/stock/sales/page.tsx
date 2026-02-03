@@ -7,6 +7,7 @@ import { getAuthToken } from '@/lib/auth';
 import { PriceDisplay } from '@/components/ui/PriceDisplay';
 import { Currency, convertCurrency } from '@/lib/utils/currency';
 import { useCurrency } from '@/lib/context/CurrencyContext';
+import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
 import theme from '@/styles/theme';
 
 export default function SalesPage() {
@@ -126,7 +127,7 @@ export default function SalesPage() {
               Total Items Sold
             </div>
             <div className="text-3xl font-bold" style={{ color: theme.colors.accent.purple }}>
-              {totalQuantity.toFixed(2)}
+              {formatNumberWithCommas(totalQuantity)}
             </div>
           </div>
         </div>
@@ -196,7 +197,7 @@ export default function SalesPage() {
                         </div>
                       </td>
                       <td className="p-4 text-right" style={{ color: theme.colors.text.primary }}>
-                        {Number(movement.quantity || 0).toFixed(2)} {movement.item?.unit}
+                        {formatNumberWithCommas(Number(movement.quantity || 0))} {movement.item?.unit}
                       </td>
                       <td className="p-4 text-right" style={{ color: theme.colors.text.primary }}>
                         <PriceDisplay 

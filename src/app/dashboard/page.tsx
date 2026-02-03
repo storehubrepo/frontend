@@ -5,6 +5,7 @@ import { itemsApi, recipesApi } from '@/lib/api/items';
 import { stockMovementsApi } from '@/lib/api/stock-movements';
 import { analyticsApi } from '@/lib/api/analytics';
 import { getAuthToken } from '@/lib/auth';
+import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
 import Link from 'next/link';
 import theme from '@/styles/theme';
 
@@ -277,7 +278,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-right">
                     <div className="font-semibold" style={{ color: theme.colors.text.primary }}>
-                      ${((activity.quantity * activity.unitCost) || 0).toFixed(2)}
+                      ${formatNumberWithCommas((activity.quantity * activity.unitCost) || 0)}
                     </div>
                     <div className="text-sm" style={{ color: theme.colors.text.secondary }}>
                       {new Date(activity.createdAt).toLocaleDateString()}

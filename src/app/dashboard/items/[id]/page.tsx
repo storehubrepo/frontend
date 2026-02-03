@@ -827,7 +827,7 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginTop: '0.25rem' }}>
                             <span style={{ color: theme.colors.text.secondary }}>Profit Margin:</span>
                             <span style={{ color: theme.colors.text.secondary }}>
-                              {((((convertCurrency(formData.sellingPrice, item?.sellingPriceCurrency || Currency.USD, currency) - calculateCostPerUnit()) / convertCurrency(formData.sellingPrice, item?.sellingPriceCurrency || Currency.USD, currency)) * 100) || 0).toFixed(1)}%
+                              {formatNumberWithCommas(((((convertCurrency(formData.sellingPrice, item?.sellingPriceCurrency || Currency.USD, currency) - calculateCostPerUnit()) / convertCurrency(formData.sellingPrice, item?.sellingPriceCurrency || Currency.USD, currency)) * 100) || 0), 1)}%
                             </span>
                           </div>
                         </>

@@ -658,7 +658,7 @@ export default function NewItemPage() {
                           <div className="flex justify-between text-sm mt-1">
                             <span style={{ color: theme.colors.text.secondary }}>Profit Margin:</span>
                             <span style={{ color: theme.colors.text.secondary }}>
-                              {((((formData.sellingPrice - calculateCostPerUnit()) / formData.sellingPrice) * 100) || 0).toFixed(1)}%
+                              {formatNumberWithCommas(((((formData.sellingPrice - calculateCostPerUnit()) / formData.sellingPrice) * 100) || 0), 1)}%
                             </span>
                           </div>
                         </>

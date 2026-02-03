@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { stockMovementsApi } from '@/lib/api/stock-movements';
-import { getAuthToken } from '@/lib/auth';
-import theme from '@/styles/theme';
+import { getAuthToken } from '@/lib/auth';import { formatNumberWithCommas } from '@/lib/utils/numberFormat';import theme from '@/styles/theme';
 
 export default function ProductionPage() {
   const router = useRouter();
@@ -100,7 +99,7 @@ export default function ProductionPage() {
               Total Items Produced
             </div>
             <div className="text-3xl font-bold" style={{ color: theme.colors.accent.purple }}>
-              {totalQuantity.toFixed(2)}
+              {formatNumberWithCommas(totalQuantity)}
             </div>
           </div>
         </div>
@@ -164,7 +163,7 @@ export default function ProductionPage() {
                         </div>
                       </td>
                       <td className="p-4 text-right font-semibold" style={{ color: theme.colors.accent.green }}>
-                        {Number(movement.quantity || 0).toFixed(2)} {movement.item?.unit}
+                        {formatNumberWithCommas(Number(movement.quantity || 0))} {movement.item?.unit}
                       </td>
                       <td className="p-4" style={{ color: theme.colors.text.secondary }}>
                         {movement.notes || '-'}
