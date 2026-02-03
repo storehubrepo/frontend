@@ -11,11 +11,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     const token = getAuthToken();
     if (!token) {
       router.push('/login');
+    } else {
+      fetchUserRole();
     }
   }, [router]);
 
@@ -24,17 +27,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: '🏠' },
-    { name: 'My Items', path: '/dashboard/items', icon: '📦' },
-    { name: 'Stock', path: '/dashboard/stock', icon: '📊' },
-    { name: 'Expenses', path: '/dashboard/expenses', icon: '💸' },
-    { name: 'POS', path: '/dashboard/pos', icon: '💳' },
-    { name: 'Cost Analysis', path: '/dashboard/cost-analysis', icon: '💰' },
-    { name: 'Sales Analytics', path: '/dashboard/sales-analytics', icon: '📈' },
-    { name: 'Analytics', path: '/dashboard/analytics', icon: '📊' },
-    { name: 'Reports', path: '/dashboard/reports', icon: '📄' },
+  const fetchUserRole = async () => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserRole(data.role);
+      }
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+    }
+  };
+
+  const allNavItems = [
+    { name: 'Dashboard', path: '/dashboard', icon: '🏠', roles: ['parent', 'admin'] },
+    { name: 'My Items', path: '/dashboard/items', icon: '📦', roles: ['parent', 'admin'] },
+    { name: 'Stock', path: '/dashboard/stock', icon: '📊', roles: ['parent', 'admin'] },
+    { name: 'Expenses', path: '/dashboard/expenses', icon: '💸', roles: ['parent', 'admin'] },
+    { name: 'POS', path: '/dashboard/pos', icon: '💳', roles: ['parent', 'admin', 'child'] },
+    { name: 'Cost Analysis', path: '/dashboard/cost-analysis', icon: '💰', roles: ['parent', 'admin'] },
+    { name: 'Sales Analytics', path: '/dashboard/sales-analytics', icon: '📈', roles: ['parent', 'admin'] },
+    { name: 'Analytics', path: '/dashboard/analytics', icon: '📊', roles: ['parent', 'admin'] },
+    { name: 'Reports', path: '/dashboard/reports', icon: '📄', roles: ['parent', 'admin'] },
+    { name: 'Users', path: '/dashboard/users', icon: '👥', roles: ['parent', 'admin'] },
+    { name: 'Profile', path: '/dashboard/profile', icon: '👤', roles: ['parent', 'admin', 'child'] },
   ];
+
+  // Filter nav items based on user role
+  const navItems = userRole 
+    ? allNavItems.filter(item => item.roles.includes(userRole))
+    : [];
 
   const handleLogout = () => {
     logout();
@@ -84,6 +112,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="mb-10 mt-0 lg:mt-0">
           <h1 className="text-2xl font-bold mb-1">StoreHub</h1>
           <p className="text-sm text-black">My Inventory</p>
+          {userRole && (
+            <p className="text-xs text-gray-300 mt-1 capitalize">
+              {userRole === 'child' ? 'Child Account' : `${userRole} User`}
+            </p>
+          )}
         </div>
 
         <div className="mb-6">
