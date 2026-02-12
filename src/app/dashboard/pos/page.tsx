@@ -6,6 +6,7 @@ import { itemsApi, Item, ItemSize, SizePrice } from '@/lib/api/items';
 import { stockMovementsApi } from '@/lib/api/stock-movements';
 import { customersApi, Customer, CreateCustomerDto } from '@/lib/api/customers';
 import { ordersApi, CreateOrderDto, OrderItem } from '@/lib/api/orders';
+import { posSettingsApi } from '@/lib/api/pos-settings';
 import { getAuthToken } from '@/lib/auth';
 import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
 import { useCurrency } from '@/lib/context/CurrencyContext';
@@ -69,8 +70,7 @@ export default function POSPage() {
   useEffect(() => {
     loadProducts();
     loadCartsFromStorage();
-    loadCartTypesFromStorage();
-    loadOrderingFromStorage();
+    loadPosSettings();
   }, []);
 
   const loadProducts = async () => {
@@ -109,6 +109,37 @@ export default function POSPage() {
     }
   };
 
+  const loadPosSettings = async () => {
+    // Load from localStorage first for instant display
+    const savedCatOrder = localStorage.getItem('pos_category_order');
+    if (savedCatOrder) setCategoryOrder(JSON.parse(savedCatOrder));
+    const savedProdOrder = localStorage.getItem('pos_product_order');
+    if (savedProdOrder) setProductOrder(JSON.parse(savedProdOrder));
+    const savedTypes = localStorage.getItem('pos_cart_types');
+    if (savedTypes) setCartTypes(JSON.parse(savedTypes));
+
+    // Then load from backend and override
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+      const settings = await posSettingsApi.get(token);
+      if (settings.categoryOrder && settings.categoryOrder.length > 0) {
+        setCategoryOrder(settings.categoryOrder);
+        localStorage.setItem('pos_category_order', JSON.stringify(settings.categoryOrder));
+      }
+      if (settings.productOrder && Object.keys(settings.productOrder).length > 0) {
+        setProductOrder(settings.productOrder);
+        localStorage.setItem('pos_product_order', JSON.stringify(settings.productOrder));
+      }
+      if (settings.cartTypes && settings.cartTypes.length > 0) {
+        setCartTypes(settings.cartTypes);
+        localStorage.setItem('pos_cart_types', JSON.stringify(settings.cartTypes));
+      }
+    } catch (error) {
+      console.error('Failed to load POS settings from backend:', error);
+    }
+  };
+
   const loadOrderingFromStorage = () => {
     const savedCatOrder = localStorage.getItem('pos_category_order');
     if (savedCatOrder) setCategoryOrder(JSON.parse(savedCatOrder));
@@ -119,11 +150,15 @@ export default function POSPage() {
   const saveCategoryOrder = (order: string[]) => {
     setCategoryOrder(order);
     localStorage.setItem('pos_category_order', JSON.stringify(order));
+    const token = getAuthToken();
+    if (token) posSettingsApi.update({ categoryOrder: order }, token).catch(console.error);
   };
 
   const saveProductOrder = (updated: Record<string, string[]>) => {
     setProductOrder(updated);
     localStorage.setItem('pos_product_order', JSON.stringify(updated));
+    const token = getAuthToken();
+    if (token) posSettingsApi.update({ productOrder: updated }, token).catch(console.error);
   };
 
   // Category drag handlers
@@ -285,6 +320,8 @@ export default function POSPage() {
   const saveCartTypesToStorage = (types: string[]) => {
     localStorage.setItem('pos_cart_types', JSON.stringify(types));
     setCartTypes(types);
+    const token = getAuthToken();
+    if (token) posSettingsApi.update({ cartTypes: types }, token).catch(console.error);
   };
 
   const createCart = () => {
