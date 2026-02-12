@@ -40,4 +40,7 @@ export const removeUser = () => {
 export const logout = () => {
   removeAuthToken();
   removeUser();
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('userRole');
+  }
 };

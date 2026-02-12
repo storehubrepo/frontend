@@ -3,6 +3,13 @@ import { Currency } from '../utils/currency';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
+export type ItemSize = 'S' | 'M' | 'L' | 'Extra';
+
+export interface SizePrice {
+  size: ItemSize;
+  price: number;
+}
+
 export interface Item {
   id: string;
   name: string;
@@ -20,6 +27,7 @@ export interface Item {
   utilitiesCostCurrency: Currency;
   stockQuantity: number;
   recipeYield?: number;
+  sizes?: SizePrice[];
   recipes?: Recipe[];
   createdAt: string;
   updatedAt: string;
@@ -51,6 +59,7 @@ export interface CreateItemDto {
   utilitiesCostCurrency?: Currency;
   stockQuantity?: number;
   recipeYield?: number;
+  sizes?: SizePrice[];
 }
 
 export interface CreateRecipeDto {

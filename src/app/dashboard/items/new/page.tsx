@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { itemsApi, CreateItemDto, Item } from '@/lib/api/items';
+import { itemsApi, CreateItemDto, Item, ItemSize, SizePrice } from '@/lib/api/items';
 import { recipesApi } from '@/lib/api/items';
 import { getAuthToken } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
@@ -10,6 +10,9 @@ import { NumberInput } from '@/components/ui/NumberInput';
 import { PriceInput } from '@/components/ui/PriceInput';
 import { Currency } from '@/lib/utils/currency';
 import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
+import { useCurrency } from '@/lib/context/CurrencyContext';
+import { formatPrice, convertCurrency } from '@/lib/utils/currency';
+import { PriceDisplay } from '@/components/ui/PriceDisplay';
 import theme from '@/styles/theme';
 
 interface RecipeIngredient {
@@ -19,6 +22,7 @@ interface RecipeIngredient {
 
 export default function NewItemPage() {
   const router = useRouter();
+  const { currency: displayCurrency } = useCurrency();
   const [formData, setFormData] = useState<CreateItemDto>({
     name: '',
     description: '',
@@ -35,6 +39,7 @@ export default function NewItemPage() {
     utilitiesCostCurrency: Currency.USD,
     stockQuantity: 0,
     recipeYield: undefined,
+    sizes: [],
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -164,12 +169,6 @@ export default function NewItemPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation for manufactured products
-    if (formData.type === 'manufactured' && recipe.length === 0) {
-      setError('Manufactured products must have at least one ingredient in the recipe');
-      return;
-    }
-    
     setLoading(true);
     setError('');
 
@@ -208,7 +207,10 @@ export default function NewItemPage() {
     return recipe.reduce((total, recipeItem) => {
       const ingredient = getIngredientById(recipeItem.ingredientId);
       const ingredientCost = ingredient?.purchasePrice || 0;
-      return total + (ingredientCost * recipeItem.quantity);
+      const ingredientCurrency = ingredient?.purchasePriceCurrency || Currency.USD;
+      // Convert ingredient cost to display currency
+      const convertedCost = convertCurrency(ingredientCost, ingredientCurrency, displayCurrency);
+      return total + (convertedCost * recipeItem.quantity);
     }, 0);
   };
 
@@ -303,6 +305,11 @@ export default function NewItemPage() {
                   </div>
                 </button>
               </div>
+              {formData.type === 'manufactured' && (
+                <p className="text-sm mt-2" style={{ color: theme.colors.text.secondary }}>
+                  💡 <strong>Note:</strong> You can add recipes/ingredients later. Products don't require raw materials.
+                </p>
+              )}
             </div>
 
             {/* Basic Info */}
@@ -405,6 +412,84 @@ export default function NewItemPage() {
                 <option value="pound">Pound (lb)</option>
               </select>
             </div>
+
+            {/* Sizes - Only for manufactured products */}
+            {formData.type === 'manufactured' && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text.primary }}>
+                  Available Sizes (Optional)
+                </label>
+                <p className="text-xs mb-3" style={{ color: theme.colors.text.secondary }}>
+                  Toggle sizes on/off and set a price for each. S uses the selling price above by default.
+                </p>
+                <div className="space-y-3">
+                  {(['S', 'M', 'L', 'Extra'] as ItemSize[]).map((size) => {
+                    const existing = formData.sizes?.find(s => s.size === size);
+                    const isSelected = !!existing;
+                    return (
+                      <div key={size} className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentSizes = formData.sizes || [];
+                            if (isSelected) {
+                              setFormData({ ...formData, sizes: currentSizes.filter(s => s.size !== size) });
+                            } else {
+                              const defaultPrice = size === 'S' ? (formData.sellingPrice || 0) : 0;
+                              setFormData({ ...formData, sizes: [...currentSizes, { size, price: defaultPrice }] });
+                            }
+                          }}
+                          className="px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-200 min-w-[70px]"
+                          style={{
+                            background: isSelected ? theme.colors.primary.black : theme.colors.background.secondary,
+                            border: `2px solid ${isSelected ? theme.colors.primary.black : theme.colors.border}`,
+                            color: isSelected ? 'white' : theme.colors.text.primary,
+                          }}
+                        >
+                          {size}
+                        </button>
+                        {isSelected && (
+                          <div className="flex-1">
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={existing?.price || ''}
+                              onChange={(e) => {
+                                const price = parseFloat(e.target.value) || 0;
+                                const updatedSizes = (formData.sizes || []).map(s =>
+                                  s.size === size ? { ...s, price } : s
+                                );
+                                setFormData({ ...formData, sizes: updatedSizes });
+                              }}
+                              placeholder="Price for this size"
+                              className="w-full h-10 px-3 rounded-xl text-sm"
+                              style={{
+                                background: theme.colors.background.secondary,
+                                border: `2px solid ${theme.colors.border}`,
+                                color: theme.colors.text.primary,
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {formData.sizes && formData.sizes.length > 0 && (
+                  <div className="mt-3 p-3 rounded-lg" style={{ background: theme.colors.accent.green + '10', border: `1px solid ${theme.colors.accent.green}30` }}>
+                    <p className="text-xs font-semibold" style={{ color: theme.colors.accent.green }}>✓ Sizes configured:</p>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {formData.sizes.map(sp => (
+                        <span key={sp.size} className="text-xs px-2 py-1 rounded-full font-semibold" style={{ background: theme.colors.accent.green + '20', color: theme.colors.accent.green }}>
+                          {sp.size}: ${formatNumberWithCommas(sp.price)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Price Fields */}
             {formData.type === 'raw_material' ? (
@@ -624,14 +709,18 @@ export default function NewItemPage() {
                   <div className="space-y-2">
                     {recipe.map((recipeItem) => {
                       const ingredient = getIngredientById(recipeItem.ingredientId);
-                      const ingredientCost = (ingredient?.purchasePrice || 0) * recipeItem.quantity;
+                      const ingredientCost = ingredient?.purchasePrice || 0;
+                      const ingredientCurrency = ingredient?.purchasePriceCurrency || Currency.USD;
+                      const convertedCost = convertCurrency(ingredientCost, ingredientCurrency, displayCurrency);
+                      const lineTotal = convertedCost * recipeItem.quantity;
                       return (
                         <div key={recipeItem.ingredientId} className="flex justify-between text-sm">
                           <span style={{ color: theme.colors.text.secondary }}>
-                            {ingredient?.name}: {formatNumberWithCommas(recipeItem.quantity)} {ingredient?.unit} × ${formatNumberWithCommas(ingredient?.purchasePrice || 0)}
+                            {ingredient?.name}: {formatNumberWithCommas(recipeItem.quantity)} {ingredient?.unit} ×{' '}
+                            <PriceDisplay amount={ingredientCost} currency={ingredientCurrency} className="inline" />
                           </span>
                           <span className="font-semibold" style={{ color: theme.colors.text.primary }}>
-                            ${formatNumberWithCommas(ingredientCost)}
+                            {formatPrice(lineTotal, displayCurrency)}
                           </span>
                         </div>
                       );
@@ -639,11 +728,11 @@ export default function NewItemPage() {
                     <div className="border-t pt-2 mt-2" style={{ borderColor: theme.colors.border }}>
                       <div className="flex justify-between font-bold">
                         <span style={{ color: theme.colors.text.primary }}>Total Recipe Cost:</span>
-                        <span style={{ color: theme.colors.text.primary }}>${formatNumberWithCommas(calculateRecipeCost())}</span>
+                        <span style={{ color: theme.colors.text.primary }}>{formatPrice(calculateRecipeCost(), displayCurrency)}</span>
                       </div>
                       <div className="flex justify-between font-bold mt-2" style={{ color: theme.colors.accent.green }}>
                         <span>Cost Per Unit (÷ {formData.recipeYield || 1}):</span>
-                        <span>${formatNumberWithCommas(calculateCostPerUnit())}</span>
+                        <span>{formatPrice(calculateCostPerUnit(), displayCurrency)}</span>
                       </div>
                       {formData.sellingPrice && (
                         <>
@@ -674,7 +763,7 @@ export default function NewItemPage() {
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
             <button
               type="submit"
-              disabled={loading || (formData.type === 'manufactured' && recipe.length === 0)}
+              disabled={loading}
               className="flex-1 h-12 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ background: theme.colors.primary.black, color: 'white' }}
             >

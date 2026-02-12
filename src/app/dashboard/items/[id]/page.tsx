@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { itemsApi, CreateItemDto, Item } from '@/lib/api/items';
+import { itemsApi, CreateItemDto, Item, ItemSize, SizePrice } from '@/lib/api/items';
 import { recipesApi, Recipe } from '@/lib/api/items';
 import { getAuthToken } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
@@ -39,6 +39,7 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
     laborCost: 0,
     utilitiesCost: 0,
     recipeYield: undefined,
+    sizes: [],
   });
   const [availableItems, setAvailableItems] = useState<Item[]>([]);
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([]);
@@ -93,6 +94,7 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
         utilitiesCost: foundItem.utilitiesCost || 0,
         utilitiesCostCurrency: foundItem.utilitiesCostCurrency,
         recipeYield: foundItem.recipeYield,
+        sizes: foundItem.sizes || [],
       });
 
       // Load recipes if manufactured item
@@ -495,6 +497,88 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
                   </select>
                 </div>
               </div>
+
+              {/* Sizes - Only for manufactured products */}
+              {item?.type === 'manufactured' && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ 
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '500',
+                    color: '#000000',
+                  }}>
+                    Available Sizes
+                  </label>
+                  <p style={{ fontSize: '0.75rem', color: theme.colors.text.secondary, marginBottom: '0.75rem' }}>
+                    Toggle sizes and set a price for each. S uses the selling price by default.
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {(['S', 'M', 'L', 'Extra'] as ItemSize[]).map((size) => {
+                      const existing = formData.sizes?.find(s => s.size === size);
+                      const isSelected = !!existing;
+                      return (
+                        <div key={size} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentSizes = formData.sizes || [];
+                              if (isSelected) {
+                                setFormData({ ...formData, sizes: currentSizes.filter(s => s.size !== size) });
+                              } else {
+                                const defaultPrice = size === 'S' ? (formData.sellingPrice || 0) : 0;
+                                setFormData({ ...formData, sizes: [...currentSizes, { size, price: defaultPrice }] });
+                              }
+                            }}
+                            style={{
+                              padding: '0.5rem 1rem',
+                              borderRadius: theme.borderRadius.md,
+                              fontWeight: '600',
+                              fontSize: '0.875rem',
+                              transition: 'all 0.2s',
+                              minWidth: '70px',
+                              cursor: 'pointer',
+                              background: isSelected ? theme.colors.primary.black : theme.colors.background.secondary,
+                              border: `2px solid ${isSelected ? theme.colors.primary.black : theme.colors.border}`,
+                              color: isSelected ? 'white' : '#000000',
+                            }}
+                          >
+                            {size}
+                          </button>
+                          {isSelected && (
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={existing?.price || ''}
+                              onChange={(e) => {
+                                const price = parseFloat(e.target.value) || 0;
+                                const updatedSizes = (formData.sizes || []).map(s =>
+                                  s.size === size ? { ...s, price } : s
+                                );
+                                setFormData({ ...formData, sizes: updatedSizes });
+                              }}
+                              placeholder="Price"
+                              style={{
+                                flex: 1,
+                                padding: '0.5rem 0.75rem',
+                                border: `1px solid ${theme.colors.border}`,
+                                borderRadius: theme.borderRadius.sm,
+                                fontSize: '0.875rem',
+                                color: '#000000',
+                              }}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {formData.sizes && formData.sizes.length > 0 && (
+                    <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', borderRadius: theme.borderRadius.sm, background: theme.colors.accent.green + '10', border: `1px solid ${theme.colors.accent.green}30` }}>
+                      <p style={{ fontSize: '0.75rem', fontWeight: '600', color: theme.colors.accent.green }}>✓ Sizes: {formData.sizes.map(sp => `${sp.size}: $${sp.price}`).join(', ')}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

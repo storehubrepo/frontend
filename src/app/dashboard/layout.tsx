@@ -12,15 +12,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const token = getAuthToken();
     if (!token) {
       router.push('/login');
-    } else {
-      fetchUserRole();
+      return;
     }
-  }, [router]);
+    
+    // Check localStorage first for instant redirect
+    const storedRole = localStorage.getItem('userRole');
+    if (storedRole === 'child' && pathname !== '/dashboard/pos' && pathname !== '/dashboard/profile') {
+      router.replace('/dashboard/pos');
+      return;
+    }
+    
+    fetchUserRole();
+  }, [router, pathname]);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -36,12 +45,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         },
       });
 
+      if (response.status === 401) {
+        // Unauthorized - clear auth and redirect to login
+        localStorage.clear();
+        router.push('/login');
+        return;
+      }
+
       if (response.ok) {
         const data = await response.json();
         setUserRole(data.role);
+        
+        // Update localStorage with fresh role
+        localStorage.setItem('userRole', data.role);
+        
+        // Redirect child users to POS if they try to access any other page
+        if (data.role === 'child' && pathname !== '/dashboard/pos' && pathname !== '/dashboard/profile') {
+          router.replace('/dashboard/pos');
+          return; // Don't set isLoading to false, keep splash screen during redirect
+        }
+        
+        setIsLoading(false);
+      } else {
+        // Other errors - redirect to login
+        localStorage.clear();
+        router.push('/login');
       }
     } catch (error) {
       console.error('Error fetching user role:', error);
+      localStorage.clear();
+      router.push('/login');
     }
   };
 
@@ -51,6 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Stock', path: '/dashboard/stock', icon: '📊', roles: ['parent', 'admin'] },
     { name: 'Expenses', path: '/dashboard/expenses', icon: '💸', roles: ['parent', 'admin'] },
     { name: 'POS', path: '/dashboard/pos', icon: '💳', roles: ['parent', 'admin', 'child'] },
+    { name: 'Customers', path: '/dashboard/customers', icon: '👥', roles: ['parent', 'admin'] },
     { name: 'Cost Analysis', path: '/dashboard/cost-analysis', icon: '💰', roles: ['parent', 'admin'] },
     { name: 'Sales Analytics', path: '/dashboard/sales-analytics', icon: '📈', roles: ['parent', 'admin'] },
     { name: 'Analytics', path: '/dashboard/analytics', icon: '📊', roles: ['parent', 'admin'] },
@@ -68,6 +102,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     logout();
     router.push('/login');
   };
+
+  // Show splash screen while loading user role
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="mb-8">
+            <h1 className="text-5xl font-bold text-white mb-2">StoreHub</h1>
+            <p className="text-gray-400 text-lg">Loading your workspace...</p>
+          </div>
+          <div className="flex justify-center items-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

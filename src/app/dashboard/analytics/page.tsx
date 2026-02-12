@@ -6,10 +6,13 @@ import { analyticsApi, AnalyticsSummary } from '@/lib/api/analytics';
 import { getAuthToken } from '@/lib/auth';
 import { expensesApi } from '@/lib/api/expenses';
 import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
+import { useCurrency } from '@/lib/context/CurrencyContext';
+import { formatPrice, Currency } from '@/lib/utils/currency';
 import theme from '@/styles/theme';
 
 export default function AnalyticsPage() {
   const router = useRouter();
+  const { currency: displayCurrency } = useCurrency();
   const [data, setData] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [includeExpenses, setIncludeExpenses] = useState(true);
@@ -174,7 +177,7 @@ export default function AnalyticsPage() {
               </svg>
             </div>
             <h3 className="text-sm opacity-90 mb-1">Stock Value</h3>
-            <p className="text-4xl font-bold">${formatNumberWithCommas(data.totalStockValue, 0)}</p>
+            <p className="text-4xl font-bold">{formatPrice(data.totalStockValue, displayCurrency)}</p>
           </div>
 
           <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
@@ -185,7 +188,7 @@ export default function AnalyticsPage() {
               </svg>
             </div>
             <h3 className="text-sm opacity-90 mb-1">Net Profit</h3>
-            <p className="text-4xl font-bold">${formatNumberWithCommas(data.netProfit, 0)}</p>
+            <p className="text-4xl font-bold">{formatPrice(data.netProfit, displayCurrency)}</p>
           </div>
 
           <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-6 text-white shadow-xl">
@@ -207,11 +210,11 @@ export default function AnalyticsPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center pb-4 border-b border-gray-200">
                 <span style={{ color: theme.colors.text.secondary }}>Total Revenue</span>
-                <span className="text-2xl font-bold text-green-600">${formatNumberWithCommas(data.totalRevenue)}</span>
+                <span className="text-2xl font-bold text-green-600">{formatPrice(data.totalRevenue, displayCurrency)}</span>
               </div>
               <div className="flex justify-between items-center pb-4 border-b border-gray-200">
                 <span style={{ color: theme.colors.text.secondary }}>Total Costs</span>
-                <span className="text-2xl font-bold text-red-600">${formatNumberWithCommas(data.totalCosts)}</span>
+                <span className="text-2xl font-bold text-red-600">{formatPrice(data.totalCosts, displayCurrency)}</span>
               </div>
               {data.operatingExpenses !== undefined && (
                 <div className="flex justify-between items-center pb-4 border-b border-gray-200">
@@ -226,7 +229,7 @@ export default function AnalyticsPage() {
               )}
               <div className="flex justify-between items-center pb-4 border-b border-gray-200">
                 <span style={{ color: theme.colors.text.secondary }}>Net Profit</span>
-                <span className="text-2xl font-bold text-purple-600">${formatNumberWithCommas(data.netProfit)}</span>
+                <span className="text-2xl font-bold text-purple-600">{formatPrice(data.netProfit, displayCurrency)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span style={{ color: theme.colors.text.secondary }}>Profit Margin</span>

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { itemsApi, Item, Recipe } from '@/lib/api/items';
 import { getAuthToken } from '@/lib/auth';
 import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
+import { useCurrency } from '@/lib/context/CurrencyContext';
+import { formatPrice, Currency } from '@/lib/utils/currency';
 import theme from '@/styles/theme';
 
 interface CostBreakdown {
@@ -32,6 +34,7 @@ type ItemFilter = 'all' | string;
 
 export default function CostAnalysisPage() {
   const router = useRouter();
+  const { currency: displayCurrency } = useCurrency();
   const [items, setItems] = useState<Item[]>([]);
   const [costBreakdowns, setCostBreakdowns] = useState<CostBreakdown[]>([]);
   const [loading, setLoading] = useState(true);
@@ -275,12 +278,12 @@ export default function CostAnalysisPage() {
               Total Production Cost
             </h3>
             <p className="text-3xl font-bold" style={{ color: theme.colors.accent.red }}>
-              ${formatNumberWithCommas(totals.totalCost)}
+              {formatPrice(totals.totalCost, displayCurrency)}
             </p>
             <div className="mt-3 space-y-1 text-sm" style={{ color: '#000000' }}>
-              <div>Materials: ${formatNumberWithCommas(totals.totalMaterialCost)}</div>
-              <div>Labor: ${formatNumberWithCommas(totals.totalLaborCost)}</div>
-              <div>Utilities: ${formatNumberWithCommas(totals.totalUtilitiesCost)}</div>
+              <div>Materials: {formatPrice(totals.totalMaterialCost, displayCurrency)}</div>
+              <div>Labor: {formatPrice(totals.totalLaborCost, displayCurrency)}</div>
+              <div>Utilities: {formatPrice(totals.totalUtilitiesCost, displayCurrency)}</div>
             </div>
           </div>
 
@@ -296,7 +299,7 @@ export default function CostAnalysisPage() {
               Potential Revenue
             </h3>
             <p className="text-3xl font-bold" style={{ color: theme.colors.accent.blue }}>
-              ${formatNumberWithCommas(totals.totalRevenue)}
+              {formatPrice(totals.totalRevenue, displayCurrency)}
             </p>
             <div className="mt-3 text-sm" style={{ color: '#000000' }}>
               Based on current selling prices
@@ -315,7 +318,7 @@ export default function CostAnalysisPage() {
               Expected Profit
             </h3>
             <p className="text-3xl font-bold" style={{ color: theme.colors.accent.green }}>
-              ${formatNumberWithCommas(totals.totalProfit)}
+              {formatPrice(totals.totalProfit, displayCurrency)}
             </p>
             <div className="mt-3 text-sm" style={{ color: '#000000' }}>
               Average Margin: {totals.totalRevenue > 0 ? formatNumberWithCommas((totals.totalProfit / totals.totalRevenue) * 100, 1) : 0}%

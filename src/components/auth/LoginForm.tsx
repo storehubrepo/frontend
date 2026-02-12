@@ -25,7 +25,12 @@ export const LoginForm: React.FC = () => {
       const response = await authApi.login(formData);
       setAuthToken(response.access_token);
       setUser(response.user);
-      router.push('/dashboard');
+      
+      // Store user role in localStorage for immediate access
+      localStorage.setItem('userRole', response.user.role);
+      
+      // Redirect all users to POS as the initial page
+      router.push('/dashboard/pos');
     } catch (error: any) {
       setErrors({ submit: error.message || 'Login failed' });
     } finally {

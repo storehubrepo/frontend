@@ -1,16 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { itemsApi, Item } from '@/lib/api/items';
+import { itemsApi, Item, ItemSize, SizePrice } from '@/lib/api/items';
 import { stockMovementsApi } from '@/lib/api/stock-movements';
+import { customersApi, Customer, CreateCustomerDto } from '@/lib/api/customers';
+import { ordersApi, CreateOrderDto, OrderItem } from '@/lib/api/orders';
 import { getAuthToken } from '@/lib/auth';
 import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
+import { useCurrency } from '@/lib/context/CurrencyContext';
+import { formatPrice, convertCurrency, Currency } from '@/lib/utils/currency';
+import { PriceDisplay } from '@/components/ui/PriceDisplay';
 import theme from '@/styles/theme';
 
 interface CartItem {
   item: Item;
   quantity: number;
+  size?: ItemSize;
+  sizePrice?: number;
 }
 
 interface Cart {
@@ -19,10 +26,13 @@ interface Cart {
   type: 'table' | 'delivery' | 'takeaway';
   items: CartItem[];
   createdAt: Date;
+  customerId?: string;
+  customerName?: string;
 }
 
 export default function POSPage() {
   const router = useRouter();
+  const { currency: displayCurrency } = useCurrency();
   const [products, setProducts] = useState<Item[]>([]);
   const [carts, setCarts] = useState<Cart[]>([]);
   const [activeCartId, setActiveCartId] = useState<string | null>(null);
@@ -33,6 +43,23 @@ export default function POSPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cartTypes, setCartTypes] = useState<string[]>(['table', 'delivery', 'takeaway']);
   const [newCartType, setNewCartType] = useState('');
+
+  // Drag & drop ordering state
+  const [categoryOrder, setCategoryOrder] = useState<string[]>([]);
+  const [productOrder, setProductOrder] = useState<Record<string, string[]>>({});
+  const [draggedCategory, setDraggedCategory] = useState<string | null>(null);
+  const [dragOverCategory, setDragOverCategory] = useState<string | null>(null);
+  const [draggedProduct, setDraggedProduct] = useState<string | null>(null);
+  const [dragOverProduct, setDragOverProduct] = useState<string | null>(null);
+  
+  // Customer state
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [customerResults, setCustomerResults] = useState<Customer[]>([]);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [showQuickAddCustomer, setShowQuickAddCustomer] = useState(false);
+  const [quickCustomerName, setQuickCustomerName] = useState('');
+  const [quickCustomerPhone, setQuickCustomerPhone] = useState('');
+  const customerSearchRef = useRef<HTMLDivElement>(null);
   
   const [newCart, setNewCart] = useState({
     name: '',
@@ -43,6 +70,7 @@ export default function POSPage() {
     loadProducts();
     loadCartsFromStorage();
     loadCartTypesFromStorage();
+    loadOrderingFromStorage();
   }, []);
 
   const loadProducts = async () => {
@@ -81,6 +109,158 @@ export default function POSPage() {
     }
   };
 
+  const loadOrderingFromStorage = () => {
+    const savedCatOrder = localStorage.getItem('pos_category_order');
+    if (savedCatOrder) setCategoryOrder(JSON.parse(savedCatOrder));
+    const savedProdOrder = localStorage.getItem('pos_product_order');
+    if (savedProdOrder) setProductOrder(JSON.parse(savedProdOrder));
+  };
+
+  const saveCategoryOrder = (order: string[]) => {
+    setCategoryOrder(order);
+    localStorage.setItem('pos_category_order', JSON.stringify(order));
+  };
+
+  const saveProductOrder = (updated: Record<string, string[]>) => {
+    setProductOrder(updated);
+    localStorage.setItem('pos_product_order', JSON.stringify(updated));
+  };
+
+  // Category drag handlers
+  const handleCategoryDragStart = (category: string) => {
+    setDraggedCategory(category);
+  };
+
+  const handleCategoryDragOver = (e: React.DragEvent, category: string) => {
+    e.preventDefault();
+    if (draggedCategory && draggedCategory !== category) {
+      setDragOverCategory(category);
+    }
+  };
+
+  const handleCategoryDrop = (targetCategory: string) => {
+    if (!draggedCategory || draggedCategory === targetCategory) {
+      setDraggedCategory(null);
+      setDragOverCategory(null);
+      return;
+    }
+    const ordered = getCategories();
+    const fromIdx = ordered.indexOf(draggedCategory);
+    const toIdx = ordered.indexOf(targetCategory);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const newOrder = [...ordered];
+    newOrder.splice(fromIdx, 1);
+    newOrder.splice(toIdx, 0, draggedCategory);
+    saveCategoryOrder(newOrder);
+    setDraggedCategory(null);
+    setDragOverCategory(null);
+  };
+
+  // Product drag handlers
+  const handleProductDragStart = (productId: string) => {
+    setDraggedProduct(productId);
+  };
+
+  const handleProductDragOver = (e: React.DragEvent, productId: string) => {
+    e.preventDefault();
+    if (draggedProduct && draggedProduct !== productId) {
+      setDragOverProduct(productId);
+    }
+  };
+
+  const handleProductDrop = (targetProductId: string, category: string) => {
+    if (!draggedProduct || draggedProduct === targetProductId) {
+      setDraggedProduct(null);
+      setDragOverProduct(null);
+      return;
+    }
+    const ordered = getProductsByCategory(category);
+    const ids = ordered.map(p => p.id);
+    const fromIdx = ids.indexOf(draggedProduct);
+    const toIdx = ids.indexOf(targetProductId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const newIds = [...ids];
+    newIds.splice(fromIdx, 1);
+    newIds.splice(toIdx, 0, draggedProduct);
+    const updated = { ...productOrder, [category]: newIds };
+    saveProductOrder(updated);
+    setDraggedProduct(null);
+    setDragOverProduct(null);
+  };
+
+  // Close customer dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (customerSearchRef.current && !customerSearchRef.current.contains(event.target as Node)) {
+        setShowCustomerDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const searchCustomers = async (query: string) => {
+    setCustomerSearch(query);
+    if (query.length < 1) {
+      setCustomerResults([]);
+      setShowCustomerDropdown(false);
+      return;
+    }
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+      const results = await customersApi.search(query, token);
+      setCustomerResults(results);
+      setShowCustomerDropdown(true);
+    } catch (error) {
+      console.error('Failed to search customers:', error);
+    }
+  };
+
+  const selectCustomer = (customer: Customer) => {
+    if (!activeCartId) return;
+    const updatedCarts = carts.map(c => {
+      if (c.id === activeCartId) {
+        return { ...c, customerId: customer.id, customerName: customer.name };
+      }
+      return c;
+    });
+    saveCartsToStorage(updatedCarts);
+    setCustomerSearch(customer.name);
+    setShowCustomerDropdown(false);
+  };
+
+  const removeCustomerFromCart = () => {
+    if (!activeCartId) return;
+    const updatedCarts = carts.map(c => {
+      if (c.id === activeCartId) {
+        return { ...c, customerId: undefined, customerName: undefined };
+      }
+      return c;
+    });
+    saveCartsToStorage(updatedCarts);
+    setCustomerSearch('');
+  };
+
+  const quickAddCustomer = async () => {
+    if (!quickCustomerName.trim()) return;
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+      const newCustomer = await customersApi.create({
+        name: quickCustomerName.trim(),
+        phone: quickCustomerPhone.trim() || undefined,
+      }, token);
+      selectCustomer(newCustomer);
+      setQuickCustomerName('');
+      setQuickCustomerPhone('');
+      setShowQuickAddCustomer(false);
+    } catch (error) {
+      console.error('Failed to create customer:', error);
+      alert('Failed to create customer. Please try again.');
+    }
+  };
+
   // Calculate cost per unit for manufactured products
   const calculateCostPerUnit = (item: Item) => {
     if (item.type !== 'manufactured' || !item.recipes || item.recipes.length === 0) {
@@ -88,7 +268,10 @@ export default function POSPage() {
     }
     const totalCost = item.recipes.reduce((sum, recipe) => {
       const ingredientCost = recipe.childItem?.purchasePrice || 0;
-      return sum + (ingredientCost * recipe.quantityNeeded);
+      const ingredientCurrency = recipe.childItem?.purchasePriceCurrency || Currency.USD;
+      // Convert ingredient cost to display currency
+      const convertedCost = convertCurrency(ingredientCost, ingredientCurrency, displayCurrency);
+      return sum + (convertedCost * recipe.quantityNeeded);
     }, 0);
     const yield_ = item.recipeYield || 1;
     return totalCost / yield_;
@@ -145,16 +328,17 @@ export default function POSPage() {
     }
   };
 
-  const addToCart = (product: Item) => {
+  const addToCart = (product: Item, size?: ItemSize, sizePrice?: number) => {
     const cart = carts.find(c => c.id === activeCartId);
     if (!cart) return;
 
-    const existingItem = cart.items.find(item => item.item.id === product.id);
+    // Match by both item ID and size
+    const existingItem = cart.items.find(item => item.item.id === product.id && item.size === size);
     
     if (existingItem) {
       existingItem.quantity += 1;
     } else {
-      cart.items.push({ item: product, quantity: 1 });
+      cart.items.push({ item: product, quantity: 1, size, sizePrice });
     }
 
     const updatedCarts = carts.map(c => c.id === activeCartId ? cart : c);
@@ -162,17 +346,44 @@ export default function POSPage() {
     setShowProductsModal(false);
   };
 
-  // Get unique categories from products
+  // Get unique categories from products, respecting saved order
   const getCategories = () => {
     const categories = products
       .map(p => p.category)
       .filter((category): category is string => !!category);
-    return Array.from(new Set(categories));
+    const unique = Array.from(new Set(categories));
+    if (categoryOrder.length > 0) {
+      const ordered: string[] = [];
+      // Add categories in saved order (that still exist)
+      for (const cat of categoryOrder) {
+        if (unique.includes(cat)) ordered.push(cat);
+      }
+      // Append any new categories not yet in saved order
+      for (const cat of unique) {
+        if (!ordered.includes(cat)) ordered.push(cat);
+      }
+      return ordered;
+    }
+    return unique;
   };
 
-  // Get products by category
+  // Get products by category, respecting saved order
   const getProductsByCategory = (category: string) => {
-    return products.filter(p => p.category === category);
+    const prods = products.filter(p => p.category === category);
+    const savedOrder = productOrder[category];
+    if (savedOrder && savedOrder.length > 0) {
+      const ordered: Item[] = [];
+      for (const id of savedOrder) {
+        const found = prods.find(p => p.id === id);
+        if (found) ordered.push(found);
+      }
+      // Append any new products not yet in saved order
+      for (const p of prods) {
+        if (!ordered.find(o => o.id === p.id)) ordered.push(p);
+      }
+      return ordered;
+    }
+    return prods;
   };
 
   // Category emojis mapping
@@ -185,35 +396,39 @@ export default function POSPage() {
     'Bakery': '🥖',
   };
 
-  const updateQuantity = (productId: string, delta: number) => {
+  const updateQuantity = (productId: string, delta: number, size?: ItemSize) => {
     const cart = carts.find(c => c.id === activeCartId);
     if (!cart) return;
 
-    const item = cart.items.find(item => item.item.id === productId);
+    const item = cart.items.find(item => item.item.id === productId && item.size === size);
     if (!item) return;
 
     item.quantity += delta;
     
     if (item.quantity <= 0) {
-      cart.items = cart.items.filter(i => i.item.id !== productId);
+      cart.items = cart.items.filter(i => !(i.item.id === productId && i.size === size));
     }
 
     const updatedCarts = carts.map(c => c.id === activeCartId ? cart : c);
     saveCartsToStorage(updatedCarts);
   };
 
-  const removeFromCart = (productId: string) => {
+  const removeFromCart = (productId: string, size?: ItemSize) => {
     const cart = carts.find(c => c.id === activeCartId);
     if (!cart) return;
 
-    cart.items = cart.items.filter(item => item.item.id !== productId);
+    cart.items = cart.items.filter(item => !(item.item.id === productId && item.size === size));
     const updatedCarts = carts.map(c => c.id === activeCartId ? cart : c);
     saveCartsToStorage(updatedCarts);
   };
 
   const getCartTotal = (cart: Cart) => {
     return cart.items.reduce((total, item) => {
-      return total + (Number(item.item.sellingPrice || 0) * item.quantity);
+      const itemPrice = item.sizePrice != null ? item.sizePrice : Number(item.item.sellingPrice || 0);
+      const itemCurrency = item.item.sellingPriceCurrency || Currency.USD;
+      // Convert item price to display currency
+      const convertedPrice = convertCurrency(itemPrice, itemCurrency, displayCurrency);
+      return total + (convertedPrice * item.quantity);
     }, 0);
   };
 
@@ -234,10 +449,13 @@ Date: ${new Date().toLocaleString()}
 ITEMS
 ───────────────────────────────────
 
-${cart.items.map(item => `
-${item.item.name}
-  ${item.quantity} x $${formatNumberWithCommas(Number(item.item.sellingPrice || 0))} = $${formatNumberWithCommas(item.quantity * Number(item.item.sellingPrice || 0))}
-`).join('')}
+${cart.items.map(item => {
+  const price = item.sizePrice != null ? item.sizePrice : Number(item.item.sellingPrice || 0);
+  return `
+${item.item.name}${item.size ? ` (${item.size})` : ''}
+  ${item.quantity} x $${formatNumberWithCommas(price)} = $${formatNumberWithCommas(item.quantity * price)}
+`;
+}).join('')}
 
 ───────────────────────────────────
 TOTAL: $${formatNumberWithCommas(getCartTotal(cart))}
@@ -271,10 +489,31 @@ Thank you for your business!
           type: 'sale',
           itemId: cartItem.item.id,
           quantity: cartItem.quantity,
-          unitCost: Number(cartItem.item.sellingPrice || 0),
-          notes: `POS Sale - ${cart.name} (${cart.type})`,
+          unitCost: cartItem.sizePrice != null ? cartItem.sizePrice : Number(cartItem.item.sellingPrice || 0),
+          notes: `POS Sale - ${cart.name} (${cart.type})${cartItem.size ? ` [Size: ${cartItem.size}]` : ''}`,
         }, token);
       }
+
+      // Create an Order record
+      const orderItems: OrderItem[] = cart.items.map(cartItem => ({
+        itemId: cartItem.item.id,
+        name: cartItem.item.name,
+        quantity: cartItem.quantity,
+        size: cartItem.size,
+        price: cartItem.sizePrice != null ? cartItem.sizePrice : Number(cartItem.item.sellingPrice || 0),
+        currency: cartItem.item.sellingPriceCurrency || Currency.USD,
+      }));
+
+      const orderData: CreateOrderDto = {
+        cartName: cart.name,
+        cartType: cart.type,
+        items: orderItems,
+        total: getCartTotal(cart),
+        currency: displayCurrency,
+        customerId: cart.customerId || undefined,
+      };
+
+      await ordersApi.create(orderData, token);
 
       // Remove the cart after successful save
       deleteCart(cart.id);
@@ -287,6 +526,15 @@ Thank you for your business!
   };
 
   const activeCart = carts.find(c => c.id === activeCartId);
+
+  // Sync customer search display with active cart
+  useEffect(() => {
+    if (activeCart?.customerName) {
+      setCustomerSearch(activeCart.customerName);
+    } else {
+      setCustomerSearch('');
+    }
+  }, [activeCartId]);
 
   if (loading) {
     return (
@@ -357,6 +605,11 @@ Thank you for your business!
                     return (
                       <button
                         key={category}
+                        draggable
+                        onDragStart={() => handleCategoryDragStart(category)}
+                        onDragOver={(e) => handleCategoryDragOver(e, category)}
+                        onDrop={() => handleCategoryDrop(category)}
+                        onDragEnd={() => { setDraggedCategory(null); setDragOverCategory(null); }}
                         onClick={() => {
                           if (!activeCartId) {
                             alert('Please create an order first');
@@ -368,10 +621,13 @@ Thank you for your business!
                         className="group relative p-6 rounded-2xl text-center hover:scale-105 transition-all duration-300"
                         style={{
                           background: `linear-gradient(135deg, ${theme.colors.background.secondary} 0%, ${theme.colors.background.card} 100%)`,
-                          border: `2px solid ${theme.colors.border}`,
-                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                          border: dragOverCategory === category ? `2px solid ${theme.colors.accent.blue}` : `2px solid ${theme.colors.border}`,
+                          boxShadow: dragOverCategory === category ? `0 0 12px ${theme.colors.accent.blue}40` : '0 4px 6px rgba(0, 0, 0, 0.1)',
+                          opacity: draggedCategory === category ? 0.5 : 1,
+                          cursor: 'grab',
                         }}
                       >
+                        <div className="absolute top-2 right-2 text-xs opacity-30">⋮⋮</div>
                         <div className="text-6xl mb-3 group-hover:scale-110 transition-transform duration-300">
                           {categoryEmojis[category] || '📦'}
                         </div>
@@ -444,6 +700,93 @@ Thank you for your business!
                   </div>
                 </div>
 
+                {/* Customer Search Section */}
+                <div className="mb-4" ref={customerSearchRef}>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: '#000000' }}>
+                    👤 Customer
+                  </label>
+                  {activeCart.customerId ? (
+                    <div 
+                      className="flex items-center justify-between p-3 rounded-lg"
+                      style={{ background: theme.colors.accent.blue + '15', border: `1px solid ${theme.colors.accent.blue}30` }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">👤</span>
+                        <span className="font-semibold" style={{ color: '#000000' }}>{activeCart.customerName}</span>
+                      </div>
+                      <button
+                        onClick={removeCustomerFromCart}
+                        className="text-sm px-2 py-1 rounded hover:opacity-70 transition-opacity"
+                        style={{ color: theme.colors.accent.red }}
+                      >
+                        ✕ Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={customerSearch}
+                          onChange={(e) => searchCustomers(e.target.value)}
+                          onFocus={() => customerSearch.length >= 1 && setShowCustomerDropdown(true)}
+                          placeholder="Search customer by name or phone..."
+                          className="flex-1 px-3 py-2 rounded-lg text-sm"
+                          style={{
+                            background: theme.colors.background.secondary,
+                            border: `1px solid ${theme.colors.border}`,
+                            color: '#000000',
+                          }}
+                        />
+                        <button
+                          onClick={() => setShowQuickAddCustomer(true)}
+                          className="px-3 py-2 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity"
+                          style={{ background: theme.colors.accent.green, color: 'white' }}
+                          title="Add new customer"
+                        >
+                          +
+                        </button>
+                      </div>
+                      {showCustomerDropdown && customerResults.length > 0 && (
+                        <div
+                          className="absolute z-50 w-full mt-1 rounded-lg overflow-hidden max-h-48 overflow-y-auto"
+                          style={{
+                            background: theme.colors.background.card,
+                            border: `1px solid ${theme.colors.border}`,
+                            boxShadow: theme.shadows.md || '0 4px 12px rgba(0,0,0,0.15)',
+                          }}
+                        >
+                          {customerResults.map(customer => (
+                            <button
+                              key={customer.id}
+                              onClick={() => selectCustomer(customer)}
+                              className="w-full text-left px-4 py-3 hover:opacity-80 transition-opacity"
+                              style={{ borderBottom: `1px solid ${theme.colors.border}` }}
+                            >
+                              <div className="font-semibold text-sm" style={{ color: '#000000' }}>{customer.name}</div>
+                              {customer.phone && (
+                                <div className="text-xs" style={{ color: theme.colors.text.secondary || '#666' }}>📱 {customer.phone}</div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {showCustomerDropdown && customerSearch.length >= 1 && customerResults.length === 0 && (
+                        <div
+                          className="absolute z-50 w-full mt-1 rounded-lg p-3 text-center text-sm"
+                          style={{
+                            background: theme.colors.background.card,
+                            border: `1px solid ${theme.colors.border}`,
+                            color: '#000000',
+                          }}
+                        >
+                          No customers found. Click + to add new.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Cart Items */}
                 <div className="space-y-3 mb-6 max-h-[400px] overflow-y-auto">
                   {activeCart.items.length === 0 ? (
@@ -453,16 +796,29 @@ Thank you for your business!
                   ) : (
                     activeCart.items.map((cartItem) => (
                       <div
-                        key={cartItem.item.id}
+                        key={`${cartItem.item.id}-${cartItem.size || 'no-size'}`}
                         className="p-4 rounded-lg"
                         style={{ background: theme.colors.background.secondary }}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <div className="font-semibold" style={{ color: '#000000' }}>
-                            {cartItem.item.name}
+                          <div>
+                            <span className="font-semibold" style={{ color: '#000000' }}>
+                              {cartItem.item.name}
+                            </span>
+                            {cartItem.size && (
+                              <span 
+                                className="ml-2 text-xs font-bold px-2 py-0.5 rounded-full"
+                                style={{ 
+                                  background: theme.colors.accent.purple + '20',
+                                  color: theme.colors.accent.purple,
+                                }}
+                              >
+                                {cartItem.size}
+                              </span>
+                            )}
                           </div>
                           <button
-                            onClick={() => removeFromCart(cartItem.item.id)}
+                            onClick={() => removeFromCart(cartItem.item.id, cartItem.size)}
                             className="text-red-500 hover:text-red-700"
                           >
                             🗑️
@@ -471,7 +827,7 @@ Thank you for your business!
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <button
-                              onClick={() => updateQuantity(cartItem.item.id, -1)}
+                              onClick={() => updateQuantity(cartItem.item.id, -1, cartItem.size)}
                               className="w-8 h-8 rounded-lg font-bold hover:opacity-70 transition-opacity"
                               style={{ background: theme.colors.accent.red, color: 'white' }}
                             >
@@ -481,7 +837,7 @@ Thank you for your business!
                               {cartItem.quantity}
                             </span>
                             <button
-                              onClick={() => updateQuantity(cartItem.item.id, 1)}
+                              onClick={() => updateQuantity(cartItem.item.id, 1, cartItem.size)}
                               className="w-8 h-8 rounded-lg font-bold hover:opacity-70 transition-opacity"
                               style={{ background: theme.colors.accent.green, color: 'white' }}
                             >
@@ -490,10 +846,16 @@ Thank you for your business!
                           </div>
                           <div className="text-right">
                             <div className="text-sm" style={{ color: '#000000' }}>
-                              ${formatNumberWithCommas(Number(cartItem.item.sellingPrice || 0))} each
+                              <PriceDisplay 
+                                amount={cartItem.sizePrice != null ? cartItem.sizePrice : Number(cartItem.item.sellingPrice || 0)}
+                                currency={cartItem.item.sellingPriceCurrency || Currency.USD}
+                              /> each
                             </div>
                             <div className="font-bold" style={{ color: theme.colors.accent.green }}>
-                              ${formatNumberWithCommas(cartItem.quantity * Number(cartItem.item.sellingPrice || 0))}
+                              <PriceDisplay 
+                                amount={cartItem.quantity * (cartItem.sizePrice != null ? cartItem.sizePrice : Number(cartItem.item.sellingPrice || 0))}
+                                currency={cartItem.item.sellingPriceCurrency || Currency.USD}
+                              />
                             </div>
                           </div>
                         </div>
@@ -512,7 +874,7 @@ Thank you for your business!
                       Total
                     </span>
                     <span className="text-2xl font-bold" style={{ color: theme.colors.accent.green }}>
-                      ${formatNumberWithCommas(getCartTotal(activeCart))}
+                      {formatPrice(getCartTotal(activeCart), displayCurrency)}
                     </span>
                   </div>
                 </div>
@@ -777,16 +1139,24 @@ Thank you for your business!
             {/* Products Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {getProductsByCategory(selectedCategory).map((product) => (
-                <button
+                <div
                   key={product.id}
-                  onClick={() => addToCart(product)}
-                  className="group p-5 rounded-xl text-left hover:scale-105 transition-all duration-300"
+                  draggable
+                  onDragStart={() => handleProductDragStart(product.id)}
+                  onDragOver={(e) => handleProductDragOver(e, product.id)}
+                  onDrop={() => handleProductDrop(product.id, selectedCategory)}
+                  onDragEnd={() => { setDraggedProduct(null); setDragOverProduct(null); }}
+                  className="group p-5 rounded-xl text-left transition-all duration-300"
                   style={{
                     background: theme.colors.background.secondary,
-                    border: `2px solid ${theme.colors.border}`,
-                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                    border: dragOverProduct === product.id ? `2px solid ${theme.colors.accent.blue}` : `2px solid ${theme.colors.border}`,
+                    boxShadow: dragOverProduct === product.id ? `0 0 12px ${theme.colors.accent.blue}40` : '0 4px 6px rgba(0, 0, 0, 0.1)',
+                    opacity: draggedProduct === product.id ? 0.5 : 1,
+                    cursor: 'grab',
                   }}
                 >
+                  {/* Drag Handle */}
+                  <div className="text-xs opacity-30 text-right mb-1">⋮⋮</div>
                   {/* Product Image/Icon */}
                   <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
                     🍰
@@ -836,22 +1206,51 @@ Thank you for your business!
                         )}
                       </div>
                     )}
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="text-2xl font-bold" style={{ color: theme.colors.accent.green }}>
                         ${formatNumberWithCommas(Number(product.sellingPrice || 0))}
                       </div>
-                      <div 
-                        className="text-xs font-semibold px-3 py-1 rounded-full"
-                        style={{ 
+                    </div>
+
+                    {/* Size buttons or regular Add button */}
+                    {product.sizes && product.sizes.length > 0 ? (
+                      <div>
+                        <div className="text-xs font-semibold mb-2" style={{ color: theme.colors.text.secondary }}>
+                          Select Size:
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {product.sizes.map((sp) => (
+                            <button
+                              key={sp.size}
+                              type="button"
+                              onClick={() => addToCart(product, sp.size, sp.price)}
+                              className="flex-1 min-w-[60px] px-3 py-2 rounded-lg font-bold text-sm hover:scale-105 transition-all duration-200"
+                              style={{
+                                background: theme.colors.primary.black,
+                                color: 'white',
+                              }}
+                            >
+                              <div>{sp.size}</div>
+                              <div className="text-xs font-normal opacity-80">${formatNumberWithCommas(sp.price)}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => addToCart(product)}
+                        className="w-full py-2 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity"
+                        style={{
                           background: theme.colors.primary.black,
                           color: 'white',
                         }}
                       >
                         + Add
-                      </div>
-                    </div>
+                      </button>
+                    )}
                   </div>
-                </button>
+                </div>
               ))}
             </div>
 
@@ -873,6 +1272,84 @@ Thank you for your business!
                 style={{ background: theme.colors.primary.black, color: 'white' }}
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Add Customer Modal */}
+      {showQuickAddCustomer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div
+            className="rounded-xl p-8 max-w-md w-full"
+            style={{ background: theme.colors.background.card }}
+          >
+            <h2 className="text-2xl font-bold mb-6" style={{ color: '#000000' }}>
+              👤 Add New Customer
+            </h2>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#000000' }}>
+                  Name *
+                </label>
+                <input
+                  type="text"
+                  value={quickCustomerName}
+                  onChange={(e) => setQuickCustomerName(e.target.value)}
+                  placeholder="Customer name"
+                  className="w-full px-4 py-3 rounded-lg"
+                  style={{
+                    background: theme.colors.background.secondary,
+                    border: `1px solid ${theme.colors.border}`,
+                    color: '#000000',
+                  }}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#000000' }}>
+                  Phone (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={quickCustomerPhone}
+                  onChange={(e) => setQuickCustomerPhone(e.target.value)}
+                  placeholder="Phone number"
+                  className="w-full px-4 py-3 rounded-lg"
+                  style={{
+                    background: theme.colors.background.secondary,
+                    border: `1px solid ${theme.colors.border}`,
+                    color: '#000000',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowQuickAddCustomer(false);
+                  setQuickCustomerName('');
+                  setQuickCustomerPhone('');
+                }}
+                className="flex-1 px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity"
+                style={{
+                  background: theme.colors.background.secondary,
+                  border: `1px solid ${theme.colors.border}`,
+                  color: '#000000',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={quickAddCustomer}
+                disabled={!quickCustomerName.trim()}
+                className="flex-1 px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                style={{ background: theme.colors.accent.green, color: 'white' }}
+              >
+                Add & Select
               </button>
             </div>
           </div>

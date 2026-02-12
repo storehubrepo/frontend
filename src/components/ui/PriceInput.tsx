@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Input } from './Input';
+import { NumberInput } from './NumberInput';
 import { CurrencySelector } from './CurrencySelector';
 import { Currency } from '@/lib/utils/currency';
 
@@ -36,14 +36,15 @@ export function PriceInput({
       )}
       <div className="flex gap-2">
         <div className="flex-1">
-          <Input
-            type="number"
-            value={value || ''}
-            onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+          <NumberInput
+            value={value}
+            onChange={onChange}
             placeholder={placeholder}
             disabled={disabled}
-            step="0.01"
-            min="0"
+            min={0}
+            allowDecimals={true}
+            allowNegative={false}
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all text-black placeholder:text-gray-400"
           />
         </div>
         <div className="w-32">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { itemsApi, recipesApi } from '@/lib/api/items';
 import { stockMovementsApi } from '@/lib/api/stock-movements';
 import { analyticsApi } from '@/lib/api/analytics';
@@ -10,6 +11,17 @@ import Link from 'next/link';
 import theme from '@/styles/theme';
 
 export default function DashboardPage() {
+  const router = useRouter();
+  
+  // Check localStorage IMMEDIATELY before any state initialization
+  if (typeof window !== 'undefined') {
+    const userRole = localStorage.getItem('userRole');
+    if (userRole === 'child') {
+      router.replace('/dashboard/pos');
+      return null; // Return null to prevent rendering
+    }
+  }
+  
   const [stats, setStats] = useState({
     totalItems: 0,
     totalRecipes: 0,
@@ -26,7 +38,10 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     try {
       const token = getAuthToken();
-      if (!token) return;
+      if (!token) {
+        router.push('/login');
+        return;
+      }
 
       const [items, movements] = await Promise.all([
         itemsApi.getAll(token),
