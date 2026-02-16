@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { customersApi, Customer, CreateCustomerDto } from '@/lib/api/customers';
-import { ordersApi, Order, CustomerStats } from '@/lib/api/orders';
+import { ordersApi, Order, CustomerStats, PaymentStatus } from '@/lib/api/orders';
 import { getAuthToken } from '@/lib/auth';
 import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
 import { useCurrency } from '@/lib/context/CurrencyContext';
@@ -30,6 +30,36 @@ export default function CustomerDetailPage() {
       const orderCurrency = (order.currency as Currency) || Currency.USD;
       return sum + convertCurrency(Number(order.total), orderCurrency, displayCurrency);
     }, 0);
+  };
+
+  // Get payment status badge styling
+  const getPaymentStatusBadge = (status: PaymentStatus) => {
+    switch (status) {
+      case PaymentStatus.PAID:
+        return {
+          bg: theme.colors.accent.green + '20',
+          color: theme.colors.accent.green,
+          label: '✓ Paid'
+        };
+      case PaymentStatus.UNPAID:
+        return {
+          bg: theme.colors.accent.red + '20',
+          color: theme.colors.accent.red,
+          label: '⚠ Unpaid'
+        };
+      case PaymentStatus.FREE:
+        return {
+          bg: theme.colors.accent.blue + '20',
+          color: theme.colors.accent.blue,
+          label: '🎁 Free'
+        };
+      default:
+        return {
+          bg: theme.colors.accent.green + '20',
+          color: theme.colors.accent.green,
+          label: '✓ Paid'
+        };
+    }
   };
 
   useEffect(() => {
@@ -251,7 +281,7 @@ export default function CustomerDetailPage() {
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
             <div
               className="rounded-xl p-5 text-center"
               style={{ background: theme.colors.background.card, border: `1px solid ${theme.colors.border}` }}
@@ -288,6 +318,28 @@ export default function CustomerDetailPage() {
               </div>
               <div className="text-sm font-semibold mt-1" style={{ color: '#000000' }}>Last Order</div>
             </div>
+            {stats.unpaidOrders > 0 && (
+              <div
+                className="rounded-xl p-5 text-center"
+                style={{ background: theme.colors.background.card, border: `1px solid ${theme.colors.border}` }}
+              >
+                <div className="text-3xl font-bold" style={{ color: theme.colors.accent.red }}>
+                  {stats.unpaidOrders}
+                </div>
+                <div className="text-sm font-semibold mt-1" style={{ color: '#000000' }}>Unpaid</div>
+              </div>
+            )}
+            {stats.freeOrders > 0 && (
+              <div
+                className="rounded-xl p-5 text-center"
+                style={{ background: theme.colors.background.card, border: `1px solid ${theme.colors.border}` }}
+              >
+                <div className="text-3xl font-bold" style={{ color: theme.colors.accent.blue }}>
+                  {stats.freeOrders}
+                </div>
+                <div className="text-sm font-semibold mt-1" style={{ color: '#000000' }}>Free</div>
+              </div>
+            )}
           </div>
         )}
 
@@ -337,45 +389,54 @@ export default function CustomerDetailPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {orders.map(order => (
-                <div
-                  key={order.id}
-                  className="p-4 rounded-lg"
-                  style={{ background: theme.colors.background.secondary }}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold" style={{ color: '#000000' }}>
-                        {order.cartName || 'Order'}
-                      </span>
-                      {order.cartType && (
+              {orders.map(order => {
+                const paymentBadge = getPaymentStatusBadge(order.paymentStatus);
+                return (
+                  <div
+                    key={order.id}
+                    className="p-4 rounded-lg"
+                    style={{ background: theme.colors.background.secondary }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-bold" style={{ color: '#000000' }}>
+                          {order.cartName || 'Order'}
+                        </span>
+                        {order.cartType && (
+                          <span
+                            className="text-xs font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: theme.colors.accent.purple + '20', color: theme.colors.accent.purple }}
+                          >
+                            {order.cartType}
+                          </span>
+                        )}
                         <span
                           className="text-xs font-bold px-2 py-0.5 rounded-full"
-                          style={{ background: theme.colors.accent.purple + '20', color: theme.colors.accent.purple }}
+                          style={{ background: paymentBadge.bg, color: paymentBadge.color }}
                         >
-                          {order.cartType}
+                          {paymentBadge.label}
                         </span>
-                      )}
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold" style={{ color: theme.colors.accent.green }}>
+                          {formatPrice(convertCurrency(Number(order.total), (order.currency as Currency) || Currency.USD, displayCurrency), displayCurrency)}
+                        </div>
+                        <div className="text-xs" style={{ color: '#888' }}>
+                          {new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-bold" style={{ color: theme.colors.accent.green }}>
-                        {formatPrice(convertCurrency(Number(order.total), (order.currency as Currency) || Currency.USD, displayCurrency), displayCurrency)}
-                      </div>
-                      <div className="text-xs" style={{ color: '#888' }}>
-                        {new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
+                    <div className="text-sm" style={{ color: '#666' }}>
+                      {order.items.map((item, i) => (
+                        <span key={i}>
+                          {item.quantity}x {item.name}{item.size ? ` (${item.size})` : ''}
+                          {i < order.items.length - 1 ? ', ' : ''}
+                        </span>
+                      ))}
                     </div>
                   </div>
-                  <div className="text-sm" style={{ color: '#666' }}>
-                    {order.items.map((item, i) => (
-                      <span key={i}>
-                        {item.quantity}x {item.name}{item.size ? ` (${item.size})` : ''}
-                        {i < order.items.length - 1 ? ', ' : ''}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

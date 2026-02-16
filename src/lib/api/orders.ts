@@ -4,6 +4,12 @@ import { Currency } from '../utils/currency';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
+export enum PaymentStatus {
+  PAID = 'paid',
+  UNPAID = 'unpaid',
+  FREE = 'free',
+}
+
 export interface OrderItem {
   itemId: string;
   name: string;
@@ -20,6 +26,7 @@ export interface Order {
   items: OrderItem[];
   total: number;
   currency: Currency;
+  paymentStatus: PaymentStatus;
   customerId?: string;
   customer?: Customer;
   userId: string;
@@ -32,12 +39,15 @@ export interface CreateOrderDto {
   items: OrderItem[];
   total: number;
   currency?: Currency;
+  paymentStatus?: PaymentStatus;
   customerId?: string;
 }
 
 export interface CustomerStats {
   totalOrders: number;
   totalSpent: number;
+  unpaidOrders: number;
+  freeOrders: number;
   mostOrdered: { name: string; count: number }[];
   lastOrderDate: string | null;
 }

@@ -636,7 +636,7 @@ Thank you for your business!
                   No categories available
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
                   {getCategories().map((category) => {
                     const productsInCategory = getProductsByCategory(category);
                     return (
@@ -655,30 +655,30 @@ Thank you for your business!
                           setSelectedCategory(category);
                           setShowProductsModal(true);
                         }}
-                        className="group relative p-6 rounded-2xl text-center hover:scale-105 transition-all duration-300"
+                        className="group relative p-3 rounded-xl text-center hover:scale-105 transition-all duration-300"
                         style={{
                           background: `linear-gradient(135deg, ${theme.colors.background.secondary} 0%, ${theme.colors.background.card} 100%)`,
                           border: dragOverCategory === category ? `2px solid ${theme.colors.accent.blue}` : `2px solid ${theme.colors.border}`,
-                          boxShadow: dragOverCategory === category ? `0 0 12px ${theme.colors.accent.blue}40` : '0 4px 6px rgba(0, 0, 0, 0.1)',
+                          boxShadow: dragOverCategory === category ? `0 0 12px ${theme.colors.accent.blue}40` : '0 2px 4px rgba(0, 0, 0, 0.08)',
                           opacity: draggedCategory === category ? 0.5 : 1,
                           cursor: 'grab',
                         }}
                       >
-                        <div className="absolute top-2 right-2 text-xs opacity-30">⋮⋮</div>
-                        <div className="text-6xl mb-3 group-hover:scale-110 transition-transform duration-300">
+                        <div className="absolute top-1 right-1 text-xs opacity-20">⋮</div>
+                        <div className="text-3xl mb-1 group-hover:scale-110 transition-transform duration-300">
                           {categoryEmojis[category] || '📦'}
                         </div>
-                        <div className="font-bold text-lg mb-2" style={{ color: '#000000' }}>
+                        <div className="font-semibold text-sm mb-1" style={{ color: '#000000' }}>
                           {category}
                         </div>
                         <div 
-                          className="text-sm font-semibold px-3 py-1 rounded-full inline-block"
+                          className="text-xs font-semibold px-2 py-0.5 rounded-full inline-block"
                           style={{ 
                             background: theme.colors.accent.purple + '20',
                             color: theme.colors.accent.purple,
                           }}
                         >
-                          {productsInCategory.length} {productsInCategory.length === 1 ? 'item' : 'items'}
+                          {productsInCategory.length}
                         </div>
                       </button>
                     );
@@ -1143,30 +1143,27 @@ Thank you for your business!
       {showProductsModal && selectedCategory && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div
-            className="rounded-2xl p-8 max-w-4xl w-full max-h-[85vh] overflow-y-auto"
+            className="rounded-2xl p-6 max-w-3xl w-full max-h-[85vh] overflow-y-auto"
             style={{ 
               background: theme.colors.background.card,
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             }}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between mb-6 pb-4" style={{ borderBottom: `2px solid ${theme.colors.border}` }}>
-              <div className="flex items-center gap-4">
-                <div className="text-5xl">
+            <div className="flex items-center justify-between mb-4 pb-3" style={{ borderBottom: `1px solid ${theme.colors.border}` }}>
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">
                   {categoryEmojis[selectedCategory] || '📦'}
                 </div>
                 <div>
-                  <h2 className="text-3xl font-bold" style={{ color: '#000000' }}>
+                  <h2 className="text-xl font-bold" style={{ color: '#000000' }}>
                     {selectedCategory}
                   </h2>
-                  <p className="text-sm mt-1" style={{ color: '#000000' }}>
-                    Select items to add to your cart
-                  </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowProductsModal(false)}
-                className="text-3xl hover:opacity-70 transition-opacity p-2"
+                className="text-2xl hover:opacity-70 transition-opacity p-1"
                 style={{ color: '#000000' }}
               >
                 ×
@@ -1174,7 +1171,7 @@ Thank you for your business!
             </div>
 
             {/* Products Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {getProductsByCategory(selectedCategory).map((product) => (
                 <div
                   key={product.id}
@@ -1183,101 +1180,57 @@ Thank you for your business!
                   onDragOver={(e) => handleProductDragOver(e, product.id)}
                   onDrop={() => handleProductDrop(product.id, selectedCategory)}
                   onDragEnd={() => { setDraggedProduct(null); setDragOverProduct(null); }}
-                  className="group p-5 rounded-xl text-left transition-all duration-300"
+                  className="group p-3 rounded-lg text-left transition-all duration-200"
                   style={{
                     background: theme.colors.background.secondary,
-                    border: dragOverProduct === product.id ? `2px solid ${theme.colors.accent.blue}` : `2px solid ${theme.colors.border}`,
-                    boxShadow: dragOverProduct === product.id ? `0 0 12px ${theme.colors.accent.blue}40` : '0 4px 6px rgba(0, 0, 0, 0.1)',
+                    border: dragOverProduct === product.id ? `2px solid ${theme.colors.accent.blue}` : `1px solid ${theme.colors.border}`,
                     opacity: draggedProduct === product.id ? 0.5 : 1,
                     cursor: 'grab',
                   }}
                 >
-                  {/* Drag Handle */}
-                  <div className="text-xs opacity-30 text-right mb-1">⋮⋮</div>
-                  {/* Product Image/Icon */}
-                  <div className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-300">
-                    🍰
-                  </div>
-
                   {/* Product Name */}
-                  <div className="font-bold text-lg mb-2" style={{ color: '#000000' }}>
+                  <div className="font-semibold text-sm mb-1" style={{ color: '#000000' }}>
                     {product.name}
                   </div>
 
-                  {/* Stock Info */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <div 
-                      className="text-xs font-semibold px-2 py-1 rounded-full"
-                      style={{ 
-                        background: Number(product.stockQuantity || 0) > 10 
-                          ? theme.colors.accent.green + '20'
-                          : theme.colors.accent.red + '20',
-                        color: Number(product.stockQuantity || 0) > 10 
-                          ? theme.colors.accent.green
-                          : theme.colors.accent.red,
-                      }}
-                    >
-                      {Number(product.stockQuantity || 0) > 0 
-                        ? `${formatNumberWithCommas(Number(product.stockQuantity || 0), 0)} ${product.unit} in stock`
-                        : 'Out of stock'}
-                    </div>
+                  {/* Stock */}
+                  <div className="text-[11px] font-semibold mb-1" style={{
+                    color: Number(product.stockQuantity || 0) > 10 ? theme.colors.accent.green : theme.colors.accent.red,
+                  }}>
+                    {Number(product.stockQuantity || 0) > 0
+                      ? `${formatNumberWithCommas(Number(product.stockQuantity || 0), 0)} ${product.unit} left`
+                      : 'Out of stock'}
                   </div>
 
                   {/* Price */}
-                  <div className="pt-3" style={{ borderTop: `1px solid ${theme.colors.border}` }}>
-                    {product.type === 'manufactured' && product.recipes && product.recipes.length > 0 && (
-                      <div className="mb-2 space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span style={{ color: theme.colors.text.secondary }}>Cost per Unit:</span>
-                          <span className="font-semibold" style={{ color: theme.colors.accent.blue }}>
-                            ${formatNumberWithCommas(calculateCostPerUnit(product))}
-                          </span>
-                        </div>
-                        {product.sellingPrice && (
-                          <div className="flex justify-between text-xs">
-                            <span style={{ color: theme.colors.text.secondary }}>Profit per Unit:</span>
-                            <span className="font-semibold" style={{ color: theme.colors.accent.green }}>
-                              ${formatNumberWithCommas(Number(product.sellingPrice) - calculateCostPerUnit(product))}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-2xl font-bold" style={{ color: theme.colors.accent.green }}>
-                        ${formatNumberWithCommas(Number(product.sellingPrice || 0))}
-                      </div>
-                    </div>
+                  <div className="text-lg font-bold mb-2" style={{ color: theme.colors.accent.green }}>
+                    ${formatNumberWithCommas(Number(product.sellingPrice || 0))}
+                  </div>
 
                     {/* Size buttons or regular Add button */}
                     {product.sizes && product.sizes.length > 0 ? (
-                      <div>
-                        <div className="text-xs font-semibold mb-2" style={{ color: theme.colors.text.secondary }}>
-                          Select Size:
-                        </div>
-                        <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1">
                           {product.sizes.map((sp) => (
                             <button
                               key={sp.size}
                               type="button"
                               onClick={() => addToCart(product, sp.size, sp.price)}
-                              className="flex-1 min-w-[60px] px-3 py-2 rounded-lg font-bold text-sm hover:scale-105 transition-all duration-200"
+                              className="flex-1 min-w-[48px] px-2 py-1.5 rounded-md font-bold text-xs hover:scale-105 transition-all duration-200"
                               style={{
                                 background: theme.colors.primary.black,
                                 color: 'white',
                               }}
                             >
                               <div>{sp.size}</div>
-                              <div className="text-xs font-normal opacity-80">${formatNumberWithCommas(sp.price)}</div>
+                              <div className="text-[10px] font-normal opacity-80">${formatNumberWithCommas(sp.price)}</div>
                             </button>
                           ))}
-                        </div>
                       </div>
                     ) : (
                       <button
                         type="button"
                         onClick={() => addToCart(product)}
-                        className="w-full py-2 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity"
+                        className="w-full py-1.5 rounded-md font-bold text-xs hover:opacity-90 transition-opacity"
                         style={{
                           background: theme.colors.primary.black,
                           color: 'white',
@@ -1286,26 +1239,25 @@ Thank you for your business!
                         + Add
                       </button>
                     )}
-                  </div>
                 </div>
               ))}
             </div>
 
             {/* Empty State */}
             {getProductsByCategory(selectedCategory).length === 0 && (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">📭</div>
-                <p className="text-lg font-semibold" style={{ color: '#000000' }}>
+              <div className="text-center py-8">
+                <div className="text-4xl mb-2">📭</div>
+                <p className="text-sm font-semibold" style={{ color: '#000000' }}>
                   No products in this category
                 </p>
               </div>
             )}
 
             {/* Close Button */}
-            <div className="mt-6 pt-4" style={{ borderTop: `2px solid ${theme.colors.border}` }}>
+            <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${theme.colors.border}` }}>
               <button
                 onClick={() => setShowProductsModal(false)}
-                className="w-full px-6 py-4 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity"
+                className="w-full px-4 py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
                 style={{ background: theme.colors.primary.black, color: 'white' }}
               >
                 Close
