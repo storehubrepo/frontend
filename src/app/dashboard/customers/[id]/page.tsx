@@ -33,7 +33,17 @@ export default function CustomerDetailPage() {
   };
 
   // Get payment status badge styling
-  const getPaymentStatusBadge = (status: PaymentStatus) => {
+  const getPaymentStatusBadge = (status: PaymentStatus | undefined) => {
+    // Handle undefined or missing payment status
+    if (!status) {
+      console.warn('Payment status is undefined - database migration may not have been run');
+      return {
+        bg: theme.colors.accent.green + '20',
+        color: theme.colors.accent.green,
+        label: '✓ Paid'
+      };
+    }
+    
     switch (status) {
       case PaymentStatus.PAID:
         return {

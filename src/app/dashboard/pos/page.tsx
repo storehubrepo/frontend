@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { itemsApi, Item, ItemSize, SizePrice } from '@/lib/api/items';
 import { stockMovementsApi } from '@/lib/api/stock-movements';
 import { customersApi, Customer, CreateCustomerDto } from '@/lib/api/customers';
-import { ordersApi, CreateOrderDto, OrderItem } from '@/lib/api/orders';
+import { ordersApi, CreateOrderDto, OrderItem, PaymentStatus } from '@/lib/api/orders';
 import { posSettingsApi } from '@/lib/api/pos-settings';
 import { getAuthToken } from '@/lib/auth';
 import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
@@ -29,6 +29,7 @@ interface Cart {
   createdAt: Date;
   customerId?: string;
   customerName?: string;
+  paymentStatus: PaymentStatus;
 }
 
 export default function POSPage() {
@@ -95,9 +96,14 @@ export default function POSPage() {
     const savedCarts = localStorage.getItem('pos_carts');
     if (savedCarts) {
       const parsedCarts = JSON.parse(savedCarts);
-      setCarts(parsedCarts);
-      if (parsedCarts.length > 0 && !activeCartId) {
-        setActiveCartId(parsedCarts[0].id);
+      // Ensure all carts have paymentStatus (for backwards compatibility)
+      const cartsWithPaymentStatus = parsedCarts.map((cart: Cart) => ({
+        ...cart,
+        paymentStatus: cart.paymentStatus || PaymentStatus.PAID,
+      }));
+      setCarts(cartsWithPaymentStatus);
+      if (cartsWithPaymentStatus.length > 0 && !activeCartId) {
+        setActiveCartId(cartsWithPaymentStatus[0].id);
       }
     }
   };
@@ -331,6 +337,7 @@ export default function POSPage() {
       type: newCart.type,
       items: [],
       createdAt: new Date(),
+      paymentStatus: PaymentStatus.PAID,
     };
 
     const updatedCarts = [...carts, cart];
@@ -459,6 +466,15 @@ export default function POSPage() {
     saveCartsToStorage(updatedCarts);
   };
 
+  const updatePaymentStatus = (status: PaymentStatus) => {
+    const cart = carts.find(c => c.id === activeCartId);
+    if (!cart) return;
+
+    cart.paymentStatus = status;
+    const updatedCarts = carts.map(c => c.id === activeCartId ? cart : c);
+    saveCartsToStorage(updatedCarts);
+  };
+
   const getCartTotal = (cart: Cart) => {
     return cart.items.reduce((total, item) => {
       const itemPrice = item.sizePrice != null ? item.sizePrice : Number(item.item.sellingPrice || 0);
@@ -548,7 +564,11 @@ Thank you for your business!
         total: getCartTotal(cart),
         currency: displayCurrency,
         customerId: cart.customerId || undefined,
+        paymentStatus: cart.paymentStatus,
       };
+
+      console.log('Creating order with payment status:', cart.paymentStatus);
+      console.log('Full order data:', orderData);
 
       await ordersApi.create(orderData, token);
 
@@ -901,6 +921,53 @@ Thank you for your business!
                   )}
                 </div>
 
+                {/* Payment Status */}
+                <div
+                  className="p-4 rounded-lg mb-4"
+                  style={{ background: theme.colors.background.secondary }}
+                >
+                  <div className="mb-2">
+                    <span className="text-sm font-semibold" style={{ color: '#000000' }}>
+                      Payment Status
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => updatePaymentStatus(PaymentStatus.PAID)}
+                      className="px-3 py-2 rounded-lg font-semibold text-sm transition-all"
+                      style={{
+                        background: activeCart.paymentStatus === PaymentStatus.PAID ? theme.colors.accent.green : theme.colors.background.card,
+                        color: activeCart.paymentStatus === PaymentStatus.PAID ? 'white' : '#000000',
+                        border: `2px solid ${activeCart.paymentStatus === PaymentStatus.PAID ? theme.colors.accent.green : theme.colors.border}`,
+                      }}
+                    >
+                      ✓ Paid
+                    </button>
+                    <button
+                      onClick={() => updatePaymentStatus(PaymentStatus.UNPAID)}
+                      className="px-3 py-2 rounded-lg font-semibold text-sm transition-all"
+                      style={{
+                        background: activeCart.paymentStatus === PaymentStatus.UNPAID ? theme.colors.accent.red : theme.colors.background.card,
+                        color: activeCart.paymentStatus === PaymentStatus.UNPAID ? 'white' : '#000000',
+                        border: `2px solid ${activeCart.paymentStatus === PaymentStatus.UNPAID ? theme.colors.accent.red : theme.colors.border}`,
+                      }}
+                    >
+                      ⚠ Unpaid
+                    </button>
+                    <button
+                      onClick={() => updatePaymentStatus(PaymentStatus.FREE)}
+                      className="px-3 py-2 rounded-lg font-semibold text-sm transition-all"
+                      style={{
+                        background: activeCart.paymentStatus === PaymentStatus.FREE ? theme.colors.accent.blue : theme.colors.background.card,
+                        color: activeCart.paymentStatus === PaymentStatus.FREE ? 'white' : '#000000',
+                        border: `2px solid ${activeCart.paymentStatus === PaymentStatus.FREE ? theme.colors.accent.blue : theme.colors.border}`,
+                      }}
+                    >
+                      🎁 Free
+                    </button>
+                  </div>
+                </div>
+
                 {/* Cart Total */}
                 <div
                   className="p-4 rounded-lg mb-4"
@@ -1204,7 +1271,14 @@ Thank you for your business!
 
                   {/* Price */}
                   <div className="text-lg font-bold mb-2" style={{ color: theme.colors.accent.green }}>
-                    ${formatNumberWithCommas(Number(product.sellingPrice || 0))}
+                    {formatPrice(
+                      convertCurrency(
+                        Number(product.sellingPrice || 0),
+                        (product.sellingPriceCurrency as Currency) || Currency.USD,
+                        displayCurrency
+                      ),
+                      displayCurrency
+                    )}
                   </div>
 
                     {/* Size buttons or regular Add button */}
@@ -1222,7 +1296,16 @@ Thank you for your business!
                               }}
                             >
                               <div>{sp.size}</div>
-                              <div className="text-[10px] font-normal opacity-80">${formatNumberWithCommas(sp.price)}</div>
+                              <div className="text-[10px] font-normal opacity-80">
+                                {formatPrice(
+                                  convertCurrency(
+                                    sp.price,
+                                    (product.sellingPriceCurrency as Currency) || Currency.USD,
+                                    displayCurrency
+                                  ),
+                                  displayCurrency
+                                )}
+                              </div>
                             </button>
                           ))}
                       </div>

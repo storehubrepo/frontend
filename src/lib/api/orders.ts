@@ -26,10 +26,17 @@ export interface Order {
   items: OrderItem[];
   total: number;
   currency: Currency;
-  paymentStatus: PaymentStatus;
+  paymentStatus?: PaymentStatus; // Optional for backwards compatibility
   customerId?: string;
   customer?: Customer;
   userId: string;
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: 'parent' | 'child' | 'admin';
+  };
   createdAt: string;
 }
 
@@ -53,8 +60,13 @@ export interface CustomerStats {
 }
 
 export const ordersApi = {
-  async getAll(token: string): Promise<Order[]> {
-    const response = await axios.get(`${API_URL}/orders`, {
+  async getAll(token: string, paymentStatus?: PaymentStatus): Promise<Order[]> {
+    const params = new URLSearchParams();
+    if (paymentStatus) {
+      params.append('paymentStatus', paymentStatus);
+    }
+    
+    const response = await axios.get(`${API_URL}/orders${params.toString() ? '?' + params.toString() : ''}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;

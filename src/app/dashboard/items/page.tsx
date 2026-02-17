@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { itemsApi, Item } from '@/lib/api/items';
+import { itemsApi, Item, recipesApi } from '@/lib/api/items';
 import { getAuthToken } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
 import { formatCurrency, formatNumberWithCommas } from '@/lib/utils/numberFormat';
@@ -74,6 +74,89 @@ export default function ItemsPage() {
       loadItems();
     } catch (error) {
       console.error('Failed to delete item:', error);
+    }
+  };
+
+  const handleClone = async (item: Item) => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      // Generate new name with number suffix
+      const baseName = item.name;
+      const existingNames = items.map(i => i.name);
+      let newName = baseName;
+      let counter = 2;
+      
+      // Find the next available number
+      while (existingNames.includes(newName)) {
+        newName = `${baseName} ${counter}`;
+        counter++;
+      }
+
+      // Create cloned item data with proper type conversion
+      const clonedData: any = {
+        name: newName,
+        type: item.type,
+        unit: item.unit,
+      };
+
+      // Only add optional fields if they exist
+      if (item.description) clonedData.description = item.description;
+      if (item.category) clonedData.category = item.category;
+      
+      // Convert numbers and handle currency fields
+      if (item.purchasePrice != null) {
+        clonedData.purchasePrice = Number(item.purchasePrice);
+        clonedData.purchasePriceCurrency = item.purchasePriceCurrency || Currency.USD;
+      }
+      if (item.sellingPrice != null) {
+        clonedData.sellingPrice = Number(item.sellingPrice);
+        clonedData.sellingPriceCurrency = item.sellingPriceCurrency || Currency.USD;
+      }
+      if (item.laborCost != null) {
+        clonedData.laborCost = Number(item.laborCost);
+        clonedData.laborCostCurrency = item.laborCostCurrency || Currency.USD;
+      }
+      if (item.utilitiesCost != null) {
+        clonedData.utilitiesCost = Number(item.utilitiesCost);
+        clonedData.utilitiesCostCurrency = item.utilitiesCostCurrency || Currency.USD;
+      }
+      if (item.stockQuantity != null) {
+        clonedData.stockQuantity = Number(item.stockQuantity);
+      }
+      if (item.recipeYield != null) {
+        clonedData.recipeYield = Number(item.recipeYield);
+      }
+      if (item.sizes && item.sizes.length > 0) {
+        clonedData.sizes = item.sizes.map(s => ({
+          size: s.size,
+          price: Number(s.price)
+        }));
+      }
+
+      // Create the cloned item
+      const newItem = await itemsApi.create(clonedData, token);
+
+      // If it's a manufactured product with recipes, clone the recipes
+      if (item.type === 'manufactured' && item.recipes && item.recipes.length > 0) {
+        const recipePromises = item.recipes.map(recipe =>
+          recipesApi.create({
+            parentItemId: newItem.id,
+            childItemId: recipe.childItemId,
+            quantityNeeded: Number(recipe.quantityNeeded),
+          }, token)
+        );
+        await Promise.all(recipePromises);
+      }
+
+      // Reload items
+      await loadItems();
+      alert(`Item cloned successfully as "${newName}"`);
+    } catch (error: any) {
+      console.error('Failed to clone item:', error);
+      const errorMsg = error.response?.data?.message || 'Failed to clone item. Please try again.';
+      alert(errorMsg);
     }
   };
 
@@ -275,6 +358,15 @@ export default function ItemsPage() {
                       Recipe
                     </button>
                   )}
+                  <button
+                    onClick={() => handleClone(item)}
+                    className="px-4 py-2 border-2 border-blue-500 text-blue-500 rounded-lg hover:bg-blue-50 transition-colors"
+                    title="Clone item"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
                   <button
                     onClick={() => handleDelete(item.id)}
                     className="px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 transition-colors"

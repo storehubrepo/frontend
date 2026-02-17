@@ -28,14 +28,6 @@ export default function AnalyticsPage() {
     loadData();
   }, [includeExpenses, excludedExpenseTypes]);
 
-  useEffect(() => {
-    loadExpenseTypes();
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [includeExpenses, excludedExpenseTypes]);
-
   const loadExpenseTypes = async () => {
     try {
       const token = getAuthToken();
@@ -238,6 +230,57 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
+          <div className="bg-white rounded-2xl p-6 shadow-xl">
+            <h2 className="text-2xl font-bold mb-6" style={{ color: theme.colors.text.primary }}>Orders Overview</h2>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+                <span style={{ color: theme.colors.text.secondary }}>Total Orders</span>
+                <span className="text-2xl font-bold text-gray-800">{data.orderStats?.totalOrders || 0}</span>
+              </div>
+              <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+                <div className="flex items-center gap-2">
+                  <span style={{ color: theme.colors.text.secondary }}>Paid Orders</span>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                    ✓
+                  </span>
+                </div>
+                <span className="text-2xl font-bold text-green-600">{data.orderStats?.paidOrders || 0}</span>
+              </div>
+              {(data.orderStats?.unpaidOrders || 0) > 0 && (
+                <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <span style={{ color: theme.colors.text.secondary }}>Unpaid Orders</span>
+                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                      ⚠
+                    </span>
+                  </div>
+                  <span className="text-2xl font-bold text-red-600">{data.orderStats?.unpaidOrders || 0}</span>
+                </div>
+              )}
+              {(data.orderStats?.freeOrders || 0) > 0 && (
+                <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <span style={{ color: theme.colors.text.secondary }}>Free Orders</span>
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                      🎁
+                    </span>
+                  </div>
+                  <span className="text-2xl font-bold text-blue-600">{data.orderStats?.freeOrders || 0}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center">
+                <div>
+                  <span style={{ color: theme.colors.text.secondary }}>Paid Orders Revenue</span>
+                  <p className="text-xs text-gray-500">Excludes unpaid & free</p>
+                </div>
+                <span className="text-2xl font-bold text-purple-600">{formatPrice(data.orderStats?.paidOrdersRevenue || 0, displayCurrency)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Selling Items */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-2xl p-6 shadow-xl">
             <h2 className="text-2xl font-bold mb-6" style={{ color: theme.colors.text.primary }}>Top Selling Items</h2>
             <div className="space-y-3">

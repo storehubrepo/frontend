@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { PaymentStatus } from './orders';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -26,6 +27,13 @@ export interface AnalyticsSummary {
   profitMargin: number;
   topSellingItems: Array<{ itemId: string; itemName: string; totalSold: number }>;
   costBreakdown: CostBreakdown[];
+  orderStats: {
+    totalOrders: number;
+    paidOrders: number;
+    unpaidOrders: number;
+    freeOrders: number;
+    paidOrdersRevenue: number;
+  };
 }
 
 export interface ProfitReport {
@@ -46,6 +54,20 @@ export interface ProfitReport {
     cost: number;
     profit: number;
   }>;
+}
+
+export interface OrdersAnalytics {
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+  totalOrders: number;
+  paidOrders: number;
+  unpaidOrders: number;
+  freeOrders: number;
+  totalRevenue: number;
+  unpaidRevenue: number;
+  averageOrderValue: number;
 }
 
 export const analyticsApi = {
@@ -82,6 +104,34 @@ export const analyticsApi = {
     }
     
     const response = await axios.get(`${API_URL}/analytics/profit-report?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+
+  async getOrdersAnalytics(
+    token: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<OrdersAnalytics> {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    
+    const response = await axios.get(`${API_URL}/analytics/orders?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  },
+
+  async getOrdersByStatus(
+    token: string,
+    paymentStatus?: PaymentStatus
+  ): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (paymentStatus) params.append('paymentStatus', paymentStatus);
+    
+    const response = await axios.get(`${API_URL}/analytics/orders/by-status?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;

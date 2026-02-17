@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { getAuthToken } from '@/lib/auth';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
       if (!token) {
         router.push('/login');
         return;
@@ -60,7 +61,7 @@ export default function ProfilePage() {
     setSaving(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
         method: 'PUT',
         headers: {
@@ -102,7 +103,7 @@ export default function ProfilePage() {
     setSaving(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
         method: 'PUT',
         headers: {
@@ -151,7 +152,7 @@ export default function ProfilePage() {
                   type="email"
                   value={profile.email}
                   disabled
-                  className="bg-gray-100"
+                  className="bg-black/5"
                 />
               </div>
 
@@ -160,7 +161,7 @@ export default function ProfilePage() {
                 <Input
                   value={profile.role.toUpperCase()}
                   disabled
-                  className="bg-gray-100"
+                  className="bg-black/5"
                 />
               </div>
 
@@ -187,7 +188,7 @@ export default function ProfilePage() {
                 <Input
                   value={new Date(profile.createdAt).toLocaleDateString()}
                   disabled
-                  className="bg-gray-100"
+                  className="bg-black/5"
                 />
               </div>
 

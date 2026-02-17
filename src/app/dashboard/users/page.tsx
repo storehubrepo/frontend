@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
+import { getAuthToken } from '@/lib/auth';
 
 interface ChildUser {
   id: string;
@@ -40,7 +41,7 @@ export default function UsersManagementPage() {
 
   const checkUserRole = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
       if (!token) {
         router.push('/login');
         return;
@@ -68,7 +69,7 @@ export default function UsersManagementPage() {
 
   const fetchChildren = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/children`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -98,7 +99,7 @@ export default function UsersManagementPage() {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/children`, {
         method: 'POST',
         headers: {
@@ -128,7 +129,7 @@ export default function UsersManagementPage() {
     if (!selectedChild) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/users/children/${selectedChild.id}`,
         {
@@ -165,7 +166,7 @@ export default function UsersManagementPage() {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getAuthToken();
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/users/children/${childId}`,
         {
@@ -203,7 +204,7 @@ export default function UsersManagementPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">User Management</h1>
+        <h1 className="text-3xl font-bold text-black">User Management</h1>
         <Button onClick={() => setIsCreateModalOpen(true)}>
           Add Child User
         </Button>
@@ -211,32 +212,32 @@ export default function UsersManagementPage() {
 
       <Card>
         <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Child Users</h2>
+          <h2 className="text-xl font-semibold mb-4 text-black">Child Users</h2>
           {children.length === 0 ? (
-            <p className="text-gray-500">No child users yet. Create one to get started.</p>
+            <p className="text-black">No child users yet. Create one to get started.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4">Name</th>
-                    <th className="text-left py-3 px-4">Email</th>
-                    <th className="text-left py-3 px-4">Status</th>
-                    <th className="text-left py-3 px-4">Created</th>
-                    <th className="text-right py-3 px-4">Actions</th>
+                  <tr className="border-b border-black">
+                    <th className="text-left py-3 px-4 text-black font-semibold">Name</th>
+                    <th className="text-left py-3 px-4 text-black font-semibold">Email</th>
+                    <th className="text-left py-3 px-4 text-black font-semibold">Status</th>
+                    <th className="text-left py-3 px-4 text-black font-semibold">Created</th>
+                    <th className="text-right py-3 px-4 text-black font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {children.map((child) => (
-                    <tr key={child.id} className="border-b">
-                      <td className="py-3 px-4">{`${child.firstName} ${child.lastName}`}</td>
-                      <td className="py-3 px-4">{child.email}</td>
-                      <td className="py-3 px-4">
+                    <tr key={child.id} className="border-b border-black">
+                      <td className="py-3 px-4 text-black">{`${child.firstName} ${child.lastName}`}</td>
+                      <td className="py-3 px-4 text-black">{child.email}</td>
+                      <td className="py-3 px-4 text-black">
                         <Badge variant={child.isActive ? 'success' : 'info'}>
                           {child.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4">{new Date(child.createdAt).toLocaleDateString()}</td>
+                      <td className="py-3 px-4 text-black">{new Date(child.createdAt).toLocaleDateString()}</td>
                       <td className="py-3 px-4 text-right space-x-2">
                         <Button
                           variant="outline"
@@ -318,7 +319,7 @@ export default function UsersManagementPage() {
           <form onSubmit={handleUpdateChild} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Email</label>
-              <Input value={selectedChild.email} disabled className="bg-gray-100" />
+              <Input value={selectedChild.email} disabled className="bg-black/5" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">First Name</label>

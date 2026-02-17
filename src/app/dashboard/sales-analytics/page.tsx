@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { stockMovementsApi, StockMovement } from '@/lib/api/stock-movements';
 import { itemsApi, Item } from '@/lib/api/items';
+import { ordersApi, PaymentStatus } from '@/lib/api/orders';
 import { getAuthToken } from '@/lib/auth';
 import { formatNumberWithCommas } from '@/lib/utils/numberFormat';
+import { useCurrency } from '@/lib/context/CurrencyContext';
+import { formatPrice, Currency } from '@/lib/utils/currency';
 import theme from '@/styles/theme';
 
 type TimeFilter = 'day' | 'week' | 'month' | 'year';
@@ -18,8 +21,10 @@ interface ChartData {
 
 export default function SalesAnalyticsPage() {
   const router = useRouter();
+  const { currency: displayCurrency } = useCurrency();
   const [movements, setMovements] = useState<StockMovement[]>([]);
   const [items, setItems] = useState<Item[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('week');
   const [selectedItemId, setSelectedItemId] = useState<string>('all');
@@ -27,6 +32,7 @@ export default function SalesAnalyticsPage() {
   const [itemType, setItemType] = useState<'all' | 'manufactured' | 'raw_material'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<PaymentStatus | 'all'>('all');
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [totalSales, setTotalSales] = useState(0);
   const [totalQuantity, setTotalQuantity] = useState(0);
@@ -36,10 +42,10 @@ export default function SalesAnalyticsPage() {
   }, []);
 
   useEffect(() => {
-    if (movements.length > 0) {
+    if (movements.length > 0 || orders.length > 0) {
       processChartData(movements);
     }
-  }, [timeFilter, selectedItemId, itemType, selectedCategory]);
+  }, [timeFilter, selectedItemId, itemType, selectedCategory, selectedPaymentStatus]);
 
   const loadData = async () => {
     try {
@@ -49,14 +55,16 @@ export default function SalesAnalyticsPage() {
         return;
       }
 
-      const [movementsData, itemsData] = await Promise.all([
+      const [movementsData, itemsData, ordersData] = await Promise.all([
         stockMovementsApi.getAll(token),
-        itemsApi.getAll(token)
+        itemsApi.getAll(token),
+        ordersApi.getAll(token)
       ]);
       
       const salesMovements = movementsData.filter((m: StockMovement) => m.type === 'sale');
       setMovements(salesMovements);
       setItems(itemsData);
+      setOrders(ordersData);
       
       processChartData(salesMovements);
     } catch (error) {
@@ -69,6 +77,83 @@ export default function SalesAnalyticsPage() {
   const processChartData = (salesData: StockMovement[]) => {
     const now = new Date();
     
+    // When payment status filter is active, use orders data instead of stock movements
+    if (selectedPaymentStatus !== 'all') {
+      // Filter orders by payment status and time
+      let filteredOrders = orders.filter(order => {
+        const date = new Date(order.createdAt);
+        let matchesTime = false;
+        
+        switch (timeFilter) {
+          case 'day':
+            matchesTime = date.toDateString() === now.toDateString();
+            break;
+          case 'week':
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            matchesTime = date >= weekAgo;
+            break;
+          case 'month':
+            matchesTime = date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+            break;
+          case 'year':
+            matchesTime = date.getFullYear() === now.getFullYear();
+            break;
+          default:
+            matchesTime = true;
+        }
+        
+        return matchesTime && order.paymentStatus === selectedPaymentStatus;
+      });
+
+      // Group orders by date
+      const grouped: { [key: string]: { sales: number; quantity: number } } = {};
+      
+      filteredOrders.forEach(order => {
+        const date = new Date(order.createdAt);
+        let key = '';
+        
+        switch (timeFilter) {
+          case 'day':
+            key = `${date.getHours()}:00`;
+            break;
+          case 'week':
+            key = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            break;
+          case 'month':
+            key = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            break;
+          case 'year':
+            key = date.toLocaleDateString('en-US', { month: 'short' });
+            break;
+        }
+        
+        if (!grouped[key]) {
+          grouped[key] = { sales: 0, quantity: 0 };
+        }
+        
+        // Try both 'total' and 'totalPrice' for compatibility
+        const orderTotal = Number(order.total || order.totalPrice || 0);
+        grouped[key].sales += orderTotal;
+        
+        // Calculate total items quantity from orderItems or items
+        const orderItems = order.orderItems || order.items || [];
+        const itemsCount = orderItems.reduce((sum: number, item: any) => sum + (Number(item.quantity) || 1), 0);
+        grouped[key].quantity += itemsCount;
+      });
+
+      const chartArray = Object.entries(grouped).map(([date, data]) => ({
+        date,
+        sales: data.sales,
+        quantity: data.quantity,
+      }));
+
+      setChartData(chartArray);
+      setTotalSales(chartArray.reduce((sum, item) => sum + item.sales, 0));
+      setTotalQuantity(chartArray.reduce((sum, item) => sum + item.quantity, 0));
+      return;
+    }
+    
+    // Original logic for stock movements (when payment status is 'all')
     // Filter by time
     let filtered = salesData.filter(m => {
       const date = new Date(m.createdAt);
@@ -253,6 +338,59 @@ export default function SalesAnalyticsPage() {
             >
               📦 Raw Materials Only
             </button>
+          </div>
+
+          {/* Payment Status Filters */}
+          <div>
+            <h3 className="text-sm font-semibold mb-2" style={{ color: theme.colors.text.secondary }}>
+              Payment Status Filter
+            </h3>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              <button
+                onClick={() => setSelectedPaymentStatus('all')}
+                className="px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105"
+                style={{
+                  background: selectedPaymentStatus === 'all' ? theme.colors.primary.black : theme.colors.background.card,
+                  color: selectedPaymentStatus === 'all' ? 'white' : theme.colors.text.primary,
+                  border: `2px solid ${selectedPaymentStatus === 'all' ? theme.colors.primary.black : theme.colors.border}`,
+                }}
+              >
+                All Orders
+              </button>
+              <button
+                onClick={() => setSelectedPaymentStatus(PaymentStatus.PAID)}
+                className="px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105"
+                style={{
+                  background: selectedPaymentStatus === PaymentStatus.PAID ? theme.colors.accent.green : `${theme.colors.accent.green}20`,
+                  color: selectedPaymentStatus === PaymentStatus.PAID ? 'white' : theme.colors.accent.green,
+                  border: `2px solid ${theme.colors.accent.green}`,
+                }}
+              >
+                ✓ Paid
+              </button>
+              <button
+                onClick={() => setSelectedPaymentStatus(PaymentStatus.UNPAID)}
+                className="px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105"
+                style={{
+                  background: selectedPaymentStatus === PaymentStatus.UNPAID ? theme.colors.accent.yellow : `${theme.colors.accent.yellow}20`,
+                  color: selectedPaymentStatus === PaymentStatus.UNPAID ? 'white' : theme.colors.accent.yellow,
+                  border: `2px solid ${theme.colors.accent.yellow}`,
+                }}
+              >
+                ⚠ Unpaid
+              </button>
+              <button
+                onClick={() => setSelectedPaymentStatus(PaymentStatus.FREE)}
+                className="px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105"
+                style={{
+                  background: selectedPaymentStatus === PaymentStatus.FREE ? theme.colors.accent.blue : `${theme.colors.accent.blue}20`,
+                  color: selectedPaymentStatus === PaymentStatus.FREE ? 'white' : theme.colors.accent.blue,
+                  border: `2px solid ${theme.colors.accent.blue}`,
+                }}
+              >
+                🎁 Free
+              </button>
+            </div>
           </div>
 
           {/* Category Dropdown */}
@@ -483,8 +621,15 @@ export default function SalesAnalyticsPage() {
                 }}
               >
                 <div className="text-white">
-                  <p className="text-sm opacity-90 mb-2">Total Sales</p>
-                  <p className="text-4xl font-bold">${formatNumberWithCommas(totalSales)}</p>
+                  <p className="text-sm opacity-90 mb-2">
+                    {selectedPaymentStatus !== 'all' ? 'Total Orders Revenue' : 'Total Sales'}
+                  </p>
+                  <p className="text-4xl font-bold">{formatPrice(totalSales, displayCurrency)}</p>
+                  {selectedPaymentStatus !== 'all' && (
+                    <p className="text-xs opacity-75 mt-1">
+                      {selectedPaymentStatus === PaymentStatus.PAID ? 'Paid' : selectedPaymentStatus === PaymentStatus.UNPAID ? 'Unpaid' : 'Free'} orders only
+                    </p>
+                  )}
                 </div>
               </div>
               
@@ -496,7 +641,9 @@ export default function SalesAnalyticsPage() {
                 }}
               >
                 <div className="text-white">
-                  <p className="text-sm opacity-90 mb-2">Total Items Sold</p>
+                  <p className="text-sm opacity-90 mb-2">
+                    {selectedPaymentStatus !== 'all' ? 'Total Orders' : 'Total Items Sold'}
+                  </p>
                   <p className="text-4xl font-bold">{formatNumberWithCommas(totalQuantity, 0)}</p>
                 </div>
               </div>
@@ -511,7 +658,7 @@ export default function SalesAnalyticsPage() {
                 <div className="text-white">
                   <p className="text-sm opacity-90 mb-2">Average Sale</p>
                   <p className="text-4xl font-bold">
-                    ${chartData.length > 0 ? formatNumberWithCommas(totalSales / chartData.length) : '0'}
+                    {chartData.length > 0 ? formatPrice(totalSales / chartData.length, displayCurrency) : formatPrice(0, displayCurrency)}
                   </p>
                 </div>
               </div>
@@ -527,7 +674,12 @@ export default function SalesAnalyticsPage() {
               }}
             >
               <h2 className="text-2xl font-bold mb-6" style={{ color: theme.colors.text.primary }}>
-                Sales Revenue
+                {selectedPaymentStatus !== 'all' ? 'Orders Revenue' : 'Sales Revenue'}
+                {selectedPaymentStatus !== 'all' && (
+                  <span className="text-lg ml-2" style={{ color: theme.colors.text.secondary }}>
+                    ({selectedPaymentStatus === PaymentStatus.PAID ? 'Paid' : selectedPaymentStatus === PaymentStatus.UNPAID ? 'Unpaid' : 'Free'})
+                  </span>
+                )}
               </h2>
               
               {chartData.length === 0 ? (
@@ -543,7 +695,7 @@ export default function SalesAnalyticsPage() {
                           {item.date}
                         </span>
                         <span className="font-bold" style={{ color: theme.colors.accent.green }}>
-                          ${formatNumberWithCommas(item.sales)}
+                          {formatPrice(item.sales, displayCurrency)}
                         </span>
                       </div>
                       <div
@@ -574,7 +726,12 @@ export default function SalesAnalyticsPage() {
               }}
             >
               <h2 className="text-2xl font-bold mb-6" style={{ color: theme.colors.text.primary }}>
-                Items Sold
+                {selectedPaymentStatus !== 'all' ? 'Orders Count' : 'Items Sold'}
+                {selectedPaymentStatus !== 'all' && (
+                  <span className="text-lg ml-2" style={{ color: theme.colors.text.secondary }}>
+                    ({selectedPaymentStatus === PaymentStatus.PAID ? 'Paid' : selectedPaymentStatus === PaymentStatus.UNPAID ? 'Unpaid' : 'Free'})
+                  </span>
+                )}
               </h2>
               
               {chartData.length === 0 ? (
@@ -590,7 +747,7 @@ export default function SalesAnalyticsPage() {
                           {item.date}
                         </span>
                         <span className="font-bold" style={{ color: theme.colors.accent.blue }}>
-                          {formatNumberWithCommas(item.quantity, 0)} items
+                          {formatNumberWithCommas(item.quantity, 0)} {selectedPaymentStatus !== 'all' ? 'orders' : 'items'}
                         </span>
                       </div>
                       <div
@@ -609,6 +766,175 @@ export default function SalesAnalyticsPage() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Orders by Payment Status */}
+            <div
+              className="p-8 rounded-xl mt-8"
+              style={{
+                background: theme.colors.background.card,
+                border: `1px solid ${theme.colors.border}`,
+                boxShadow: theme.shadows.md,
+              }}
+            >
+              <h2 className="text-2xl font-bold mb-6" style={{ color: theme.colors.text.primary }}>
+                Orders by Payment Status
+                {selectedPaymentStatus !== 'all' && (
+                  <span className="text-lg ml-2" style={{ color: theme.colors.text.secondary }}>
+                    - {selectedPaymentStatus === PaymentStatus.PAID ? 'Paid' : selectedPaymentStatus === PaymentStatus.UNPAID ? 'Unpaid' : 'Free'}
+                  </span>
+                )}
+              </h2>
+              
+              {(() => {
+                const filteredOrders = orders.filter(order => {
+                  if (selectedPaymentStatus === 'all') return true;
+                  return order.paymentStatus === selectedPaymentStatus;
+                });
+
+                const orderStats = {
+                  count: filteredOrders.length,
+                  totalRevenue: filteredOrders.reduce((sum, order) => sum + Number(order.total || order.totalPrice || 0), 0),
+                };
+
+                return (
+                  <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      <div
+                        className="p-6 rounded-xl"
+                        style={{
+                          background: `${theme.colors.accent.blue}20`,
+                          border: `2px solid ${theme.colors.accent.blue}`,
+                        }}
+                      >
+                        <p className="text-sm mb-2" style={{ color: theme.colors.accent.blue }}>
+                          Total Orders
+                        </p>
+                        <p className="text-3xl font-bold" style={{ color: theme.colors.accent.blue }}>
+                          {formatNumberWithCommas(orderStats.count, 0)}
+                        </p>
+                      </div>
+                      
+                      <div
+                        className="p-6 rounded-xl"
+                        style={{
+                          background: `${theme.colors.accent.green}20`,
+                          border: `2px solid ${theme.colors.accent.green}`,
+                        }}
+                      >
+                        <p className="text-sm mb-2" style={{ color: theme.colors.accent.green }}>
+                          Total Revenue
+                        </p>
+                        <p className="text-3xl font-bold" style={{ color: theme.colors.accent.green }}>
+                          {formatPrice(orderStats.totalRevenue, displayCurrency)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {filteredOrders.length === 0 ? (
+                      <div className="text-center py-12">
+                        <p style={{ color: theme.colors.text.secondary }}>
+                          No {selectedPaymentStatus !== 'all' ? selectedPaymentStatus : ''} orders found
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead style={{ background: theme.colors.background.secondary }}>
+                            <tr>
+                              <th className="text-left p-4" style={{ color: theme.colors.text.secondary }}>
+                                Order ID
+                              </th>
+                              <th className="text-left p-4" style={{ color: theme.colors.text.secondary }}>
+                                Customer
+                              </th>
+                              <th className="text-left p-4" style={{ color: theme.colors.text.secondary }}>
+                                Created By
+                              </th>
+                              <th className="text-left p-4" style={{ color: theme.colors.text.secondary }}>
+                                Date
+                              </th>
+                              <th className="text-right p-4" style={{ color: theme.colors.text.secondary }}>
+                                Items
+                              </th>
+                              <th className="text-right p-4" style={{ color: theme.colors.text.secondary }}>
+                                Total
+                              </th>
+                              <th className="text-left p-4" style={{ color: theme.colors.text.secondary }}>
+                                Payment Status
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredOrders.slice(0, 10).map((order, index) => (
+                              <tr
+                                key={order.id}
+                                style={{
+                                  borderTop: index > 0 ? `1px solid ${theme.colors.border}` : 'none',
+                                }}
+                                className="hover:bg-opacity-50 transition-colors"
+                              >
+                                <td className="p-4 font-medium" style={{ color: theme.colors.text.primary }}>
+                                  #{order.id.toString().padStart(4, '0')}
+                                </td>
+                                <td className="p-4" style={{ color: theme.colors.text.primary }}>
+                                  {order.customer?.name || 'Unknown'}
+                                </td>
+                                <td className="p-4" style={{ color: theme.colors.text.primary }}>
+                                  {order.user?.role === 'child' ? (
+                                    <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                                      {order.user.firstName} {order.user.lastName}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
+                                </td>
+                                <td className="p-4" style={{ color: theme.colors.text.primary }}>
+                                  {new Date(order.createdAt).toLocaleDateString()}
+                                </td>
+                                <td className="p-4 text-right" style={{ color: theme.colors.text.primary }}>
+                                  {order.orderItems?.length || 0} items
+                                </td>
+                                <td className="p-4 text-right font-semibold" style={{ 
+                                  color: order.paymentStatus === PaymentStatus.PAID ? theme.colors.accent.green : theme.colors.text.primary 
+                                }}>
+                                  {formatPrice(order.total || order.totalPrice || 0, displayCurrency)}
+                                </td>
+                                <td className="p-4">
+                                  <span
+                                    className="px-3 py-1 rounded-full text-sm font-medium"
+                                    style={{
+                                      background: order.paymentStatus === PaymentStatus.PAID 
+                                        ? `${theme.colors.accent.green}20`
+                                        : order.paymentStatus === PaymentStatus.UNPAID
+                                        ? `${theme.colors.accent.yellow}20`
+                                        : `${theme.colors.accent.blue}20`,
+                                      color: order.paymentStatus === PaymentStatus.PAID
+                                        ? theme.colors.accent.green
+                                        : order.paymentStatus === PaymentStatus.UNPAID
+                                        ? theme.colors.accent.yellow
+                                        : theme.colors.accent.blue,
+                                    }}
+                                  >
+                                    {order.paymentStatus === PaymentStatus.PAID ? 'Paid' : order.paymentStatus === PaymentStatus.UNPAID ? 'Unpaid' : 'Free'}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {filteredOrders.length > 10 && (
+                          <div className="text-center mt-4">
+                            <p className="text-sm" style={{ color: theme.colors.text.secondary }}>
+                              Showing 10 of {filteredOrders.length} orders
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </>
         )}
